@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Culture Quiz</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="home-screen">
+        <h1>Culture Quiz</h1>
+        <div class="form-container">
+            <h2>Créer une Room</h2>
+            <input type="text" id="pseudo-create" placeholder="Entrez votre pseudo">
+            <button id="create-btn">Créer</button>
+        </div>
+        <div class="form-container">
+            <h2>Rejoindre une Room</h2>
+            <input type="text" id="pseudo-join" placeholder="Entrez votre pseudo">
+            <input type="text" id="room-code-input" placeholder="Entrez le code de la room">
+            <button id="join-btn">Rejoindre</button>
+        </div>
+    </div>
+
+    <div id="lobby-screen" class="hidden">
+    <h2>Room Code : <span id="room-code-display"></span></h2>
+    <h3>Joueurs connectés :</h3>
+    <ul id="player-list"></ul>
+    
+    <div id="host-controls" class="hidden">
+        <div class="category-selection">
+            <h3>Choisissez les catégories :</h3>
+            <div id="category-checkboxes"></div>
+        </div>
+        <button id="start-game-btn">Lancer le Quiz !</button>
+    </div>
+    
+    <div id="player-view" class="hidden">
+        <div class="category-selection">
+            <h3>Catégories activées :</h3>
+            <div id="category-list-player"></div> 
+        </div>
+        <p class="waiting-message">En attente du lancement par l'hôte...</p>
+    </div>
+</div>
+
+    <div id="quiz-screen" class="hidden">
+        <div id="timer">20</div>
+        <img id="question-image" src="" alt="Image de la question" class="hidden">
+        <h2 id="question-text">Ici s'affichera la question...</h2>
+        <input type="text" id="answer-input" placeholder="Votre réponse...">
+        <p id="confirmation-message" class="hidden"></p>
+        <button id="submit-answer-btn">Valider</button>
+    </div>
+
+    <div id="correction-screen" class="hidden">
+        <h2 id="correction-title">Correction de la Question 1/20</h2>
+        <div class="correction-question-details">
+            <p><strong>Question :</strong> <span id="correction-question-text"></span></p>
+            <p><strong>Réponse attendue :</strong> <span id="correction-correct-answer"></span></p>
+        </div>
+        <h3>Réponses des joueurs :</h3>
+        <div id="correction-answers-list"></div>
+        <div class="navigation-buttons">
+            <button id="prev-question-btn">Précédent</button>
+            <button id="next-question-btn">Suivant</button>
+        </div>
+        <button id="finish-correction-btn">Terminer la Correction</button>
+    </div>
+
+    <div id="score-screen" class="hidden">
+        <h2>Résultats Finaux</h2>
+        <ol id="final-scores-list"></ol>
+        <button id="play-again-btn">Retour à l'accueil</button>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>

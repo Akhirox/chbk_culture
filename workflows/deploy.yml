@@ -1,0 +1,38 @@
+name: Deploy App Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Utilisez la version de Node.js de votre choix
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Build project
+        run: npm run build # Commande de compilation de votre projet
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # **TRÈS IMPORTANT** : Remplacer par le nom du dossier de sortie (e.g., dist, build)
+          path: './dist' 
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

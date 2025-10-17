@@ -1,0 +1,234 @@
+/* client/style.css */
+body {
+    background-color: #f0f8ff;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+/* On groupe tous les écrans principaux pour un style cohérent */
+#home-screen, #lobby-screen, #quiz-screen, #correction-screen, #score-screen {
+    text-align: center;
+    background-color: white;
+    padding: 2em;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 600px;
+}
+
+.form-container {
+    margin: 2em 0;
+}
+
+input[type="text"] {
+    padding: 10px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 200px;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin: 5px; /* Ajout d'une petite marge pour espacer les boutons */
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.hidden {
+    display: none;
+}
+
+#player-list {
+    list-style: none;
+    padding: 0;
+}
+
+#player-list li {
+    background-color: #f2f2f2;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#timer {
+    font-size: 2em;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 1em;
+}
+
+#question-image {
+    max-width: 80%;
+    max-height: 250px;
+    margin-bottom: 1em;
+    border-radius: 8px;
+}
+
+#question-image.hidden {
+    display: none;
+}
+
+#category-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.category-item {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.category-item input {
+    display: none;
+}
+
+.category-item label {
+    cursor: pointer;
+}
+
+/* --- NOUVEAU : Styles pour l'écran de Correction --- */
+
+.correction-question-details {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+#correction-answers-list {
+    margin-top: 15px;
+}
+
+.answer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f2f2f2;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.answer-text {
+    text-align: left;
+    flex-grow: 1; /* Permet au texte de prendre tout l'espace disponible */
+}
+
+.answer-text .pseudo {
+    font-weight: bold;
+    display: block;
+}
+
+.validation-checkbox {
+    transform: scale(1.8); /* Rend la case à cocher plus grande et facile à cliquer */
+    margin-left: 20px;
+    cursor: pointer;
+}
+
+.navigation-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+#finish-correction-btn {
+    margin-top: 20px;
+    background-color: #28a745; /* Vert pour terminer */
+}
+
+#finish-correction-btn:hover {
+    background-color: #218838;
+}
+
+
+/* --- NOUVEAU : Styles pour l'écran des Scores --- */
+
+#final-scores-list {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+#final-scores-list li {
+    background-color: #f2f2f2;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    font-size: 1.2em;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Style "Podium" pour les 3 premiers */
+#final-scores-list li:nth-child(1) {
+    background-color: #ffd700; /* Or */
+}
+#final-scores-list li:nth-child(2) {
+    background-color: #c0c0c0; /* Argent */
+}
+#final-scores-list li:nth-child(3) {
+    background-color: #cd7f32; /* Bronze */
+}
+#confirmation-message {
+    color: #28a745; /* Vert de succès */
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-top: 15px;
+}
+#category-list-player {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Style des "tags" pour les joueurs */
+.category-item-player {
+    background-color: #007bff; /* Bleu (comme si c'était sélectionné) */
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+}
+
+.waiting-message {
+    font-style: italic;
+    color: #555;
+    margin-top: 20px;
+    font-size: 1.1em;
+}
