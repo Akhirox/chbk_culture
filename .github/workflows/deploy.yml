@@ -16,7 +16,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20' # Version LTS, assure la compatibilité
-          cache: 'npm'
           
       # ⚠️ ÉTAPE CLÉ : Installe les dépendances (pour Socket.io-client)
       - name: Install dependencies
