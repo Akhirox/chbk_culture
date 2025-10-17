@@ -1,37 +1,37 @@
-name: Deploy App Pages
+name: Deploy Front-end avec Dépendances (Corrigé)
 
 on:
   push:
     branches:
-      - main
+      - main # Vérifiez toujours le nom de la branche
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         
-      - name: Setup Node.js
+      - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Utilisez la version de Node.js de votre choix
+          node-version: '20' 
           cache: 'npm'
           
+      # ÉTAPE CLÉ : Installe les dépendances (pour Socket.io-client)
       - name: Install dependencies
         run: npm install
         
-      - name: Build project
-        run: npm run build # Commande de compilation de votre projet
-
+      # ❌ L'étape 'Build' est supprimée ici !
+      
       - name: Setup Pages
         uses: actions/configure-pages@v5
         
-      - name: Upload Artifact
+      - name: Upload Artifact (Client Folder)
         uses: actions/upload-pages-artifact@v3
         with:
-          # **TRÈS IMPORTANT** : Remplacer par le nom du dossier de sortie (e.g., dist, build)
-          path: './dist' 
+          # PUBLIE LE CONTENU DU DOSSIER 'client' car c'est là que sont les fichiers sources.
+          path: 'client' 
 
       - name: Deploy to GitHub Pages
         id: deployment
