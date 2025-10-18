@@ -51,43 +51,64 @@ async function fetchQuestions(categories) {
 }
 
 
+let quizTimers = {}; // Stocke les IDs des timeouts pour chaque room
+
 function startQuizTimer(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
+
+    // Annuler tout timer précédent pour cette room avant de commencer
+    if (quizTimers[roomCode]) {
+        clearTimeout(quizTimers[roomCode]);
+        delete quizTimers[roomCode];
+        console.log(`[${roomCode}] Ancien timer annulé.`);
+    }
+
     room.currentQuestionIndex = 0;
     room.answers = {};
-    room.players.forEach(p => p.score = 0); // Reset scores
+    room.players.forEach(p => p.score = 0);
+    console.log(`[${roomCode}] Démarrage du quiz.`);
 
     const sendNextQuestion = () => {
-        const maxQuestions = 20; // Keep low for testing
+        // Supprime la référence au timer qui vient de s'exécuter
+        if (quizTimers[roomCode]) delete quizTimers[roomCode];
+
+        // Vérifier si la room existe toujours
+        if (!rooms[roomCode]) {
+             console.log(`[${roomCode}] Room disparue, arrêt du timer.`);
+             return;
+        }
+
+        const maxQuestions = 20; // Version finale : 20 questions
         if (room.currentQuestionIndex >= room.questions.length || room.currentQuestionIndex >= maxQuestions) {
+            // Logique de fin de quiz (avec délai)
             setTimeout(() => {
-                // Check if room still exists before proceeding
-                if (!rooms[roomCode]) { console.log(`Room ${roomCode} disparue avant correction.`); return; }
-                console.log(`🏁 Quiz terminé pour ${roomCode}. Envoi data correction.`);
-                const correctionData = {
-                    questions: room.questions.slice(0, maxQuestions),
-                    playerAnswers: room.answers,
-                    players: room.players, // Scores will be updated by host clicks
-                    hostId: room.hostId // **NOUVEAU**: Include hostId here too!
-                };
-                // --- CORRECTIF : Send correction data to EVERYONE ---
+                if (!rooms[roomCode]) return; // Re-vérifier l'existence
+                console.log(`[${roomCode}] Quiz terminé. Préparation correction.`);
+                const correctionData = { /* ... */ hostId: room.hostId };
                 io.to(roomCode).emit('startCorrection', correctionData);
-                console.log(`Données de correction envoyées à la room ${roomCode}`);
-                // --- FIN CORRECTIF ---
-                 // REMOVED sending 'waitingForCorrection' separately
-            }, 500); // Delay for last answers
-            return;
+            }, 500);
+            return; // Arrête la boucle
         }
 
         const questionIndex = room.currentQuestionIndex;
         const question = room.questions[questionIndex];
+
+        console.log(`[${roomCode}] Envoi Q${questionIndex + 1}.`); // Log Envoi
         io.to(roomCode).emit('newQuestion', {
-            question, questionIndex: questionIndex + 1, totalQuestions: Math.min(room.questions.length, maxQuestions)
+            question,
+            questionIndex: questionIndex + 1,
+            totalQuestions: Math.min(room.questions.length, maxQuestions)
         });
+
         room.currentQuestionIndex++;
-        setTimeout(sendNextQuestion, 20000); // Use 20s timer
+
+        // Planifier la prochaine question/fin
+        console.log(`[${roomCode}] Planification prochaine étape dans 20s.`); // Log Planification
+        quizTimers[roomCode] = setTimeout(sendNextQuestion, 20000); // Stocke l'ID du nouveau timer
     };
+
+    // Lance la première question immédiatement
     sendNextQuestion();
 }
 
@@ -164,18 +185,49 @@ io.on('connection', (socket) => {
      });
 
     socket.on('submitAnswer', ({ roomCode, answer, questionIndex }) => {
+        console.log(`[${roomCode}] Tentative réception réponse Q${questionIndex} de ${socket.id}.`); // Log Réception
+
         const room = rooms[roomCode];
-        if (room && room.players.some(p => p.id === socket.id)) {
-            if (questionIndex === undefined || questionIndex === null || questionIndex < 0) { console.error(`Index invalide reçu de ${socket.id}`); return; }
-            if (!room.answers[questionIndex]) room.answers[questionIndex] = [];
-            const alreadyAnswered = room.answers[questionIndex].some(ans => ans.playerId === socket.id);
-            if (!alreadyAnswered) {
-                 const player = room.players.find(p => p.id === socket.id);
-                room.answers[questionIndex].push({ playerId: socket.id, pseudo: player ? player.pseudo : 'Inconnu', answer: answer });
-                console.log(`📝 Réponse Q${questionIndex} de ${player ? player.pseudo : socket.id}: "${answer}"`);
-            }
-        } else console.warn(`Réponse reçue de ${socket.id} pour room ${roomCode} invalide.`);
-     });
+
+        // Log 1: Est-ce que la room existe ?
+        if (!room) {
+            console.warn(`[${roomCode}] ERREUR: Room non trouvée pour réponse de ${socket.id}.`);
+            return;
+        }
+
+        // Log 2: Est-ce que le joueur est dans cette room ?
+        const player = room.players.find(p => p.id === socket.id);
+        if (!player) {
+             console.warn(`[${roomCode}] ERREUR: Joueur ${socket.id} non trouvé dans la room pour réponse.`);
+             console.log("Joueurs actuels:", room.players.map(p => p.pseudo));
+             return;
+        }
+
+        // Log 3: Index de question valide ?
+        if (questionIndex === undefined || questionIndex === null || questionIndex < 0) {
+            console.error(`[${roomCode}] ERREUR: Index de question invalide (${questionIndex}) reçu de ${player.pseudo}.`);
+            return;
+        }
+
+        // Initialiser si nécessaire
+        if (!room.answers[questionIndex]) {
+            room.answers[questionIndex] = [];
+        }
+
+        // Vérifier si déjà répondu
+        const alreadyAnswered = room.answers[questionIndex].some(ans => ans.playerId === socket.id);
+        if (!alreadyAnswered) {
+            room.answers[questionIndex].push({
+                playerId: socket.id,
+                pseudo: player.pseudo,
+                answer: answer
+            });
+            console.log(`[${roomCode}] ✅ Réponse Q${questionIndex} de ${player.pseudo} enregistrée: "${answer}"`);
+        } else {
+            // Optionnel: log si déjà répondu
+            // console.log(`[${roomCode}] Réponse Q${questionIndex} de ${player.pseudo} ignorée (déjà répondu).`);
+        }
+    });
 
     socket.on('validateAnswer', ({ roomCode, playerId, isCorrect, questionIndex }) => { // Include questionIndex
         const room = rooms[roomCode];
@@ -235,19 +287,19 @@ io.on('connection', (socket) => {
             if (!room || !room.players) continue;
             const playerIndex = room.players.findIndex(p => p.id === socket.id);
             if (playerIndex !== -1) {
-                const disconnectedPlayer = room.players.splice(playerIndex, 1)[0];
-                console.log(`${disconnectedPlayer.pseudo} retiré de ${code}`);
+                // ... (logique suppression joueur) ...
                 if (room.players.length === 0) {
-                    delete rooms[code]; console.log(`💥 Room ${code} supprimée.`);
-                } else {
-                    if (room.hostId === socket.id) {
-                        room.hostId = room.players[0].id;
-                        console.log(`👑 Nouvel hôte ${room.players[0].pseudo} pour ${code}`);
+                    // --- AJOUT : Nettoyer le timer ---
+                    if (quizTimers[code]) {
+                        clearTimeout(quizTimers[code]);
+                        delete quizTimers[code];
+                        console.log(`[${code}] Timer quiz nettoyé car room vide.`);
                     }
-                    io.to(code).emit('updatePlayerList', {
-                        players: room.players, hostId: room.hostId, categories: room.categories,
-                        selectedCategories: room.selectedCategories // **AJOUTÉ :** Send selected
-                    });
+                    // --- FIN AJOUT ---
+                    delete rooms[code];
+                    console.log(`💥 Room ${code} supprimée.`);
+                } else {
+                   // ... (logique changement hôte + emit update) ...
                 }
                 break;
             }
