@@ -6,8 +6,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'client/**' # Only run if client files change
   workflow_dispatch:
 
 # Permissions
