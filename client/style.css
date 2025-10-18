@@ -1,6 +1,7 @@
-/* client/style.css */
+/* client/style.css - Thème Sombre */
 body {
-    background-color: #f0f8ff;
+    background-color: #1a1a1d; /* Fond très sombre */
+    color: #f0f8ff; /* Texte principal clair (Alice Blue) */
     font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
@@ -9,15 +10,20 @@ body {
     margin: 0;
 }
 
-/* On groupe tous les écrans principaux pour un style cohérent */
+/* Style commun pour les "cartes" */
 #home-screen, #lobby-screen, #quiz-screen, #correction-screen, #score-screen {
     text-align: center;
-    background-color: white;
+    background-color: #2c2f33; /* Fond des cartes légèrement plus clair */
     padding: 2em;
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Ombre plus prononcée */
     width: 90%;
     max-width: 600px;
+    border: 1px solid #4f545c; /* Bordure subtile */
+}
+
+h1, h2, h3 {
+    color: #ffffff; /* Titres en blanc */
 }
 
 .form-container {
@@ -27,29 +33,36 @@ body {
 input[type="text"] {
     padding: 10px;
     margin: 5px;
-    border: 1px solid #ccc;
+    border: 1px solid #555; /* Bordure grise */
     border-radius: 5px;
     width: 200px;
+    background-color: #3b3f45; /* Fond des champs sombre */
+    color: #f0f8ff; /* Texte clair */
+}
+
+input[type="text"]::placeholder {
+    color: #aaa; /* Placeholder gris clair */
 }
 
 button {
     padding: 10px 20px;
     border: none;
-    background-color: #007bff;
+    background-color: #7289da; /* Bleu Discord */
     color: white;
     border-radius: 5px;
     cursor: pointer;
     font-size: 1em;
-    margin: 5px; /* Ajout d'une petite marge pour espacer les boutons */
+    margin: 5px;
+    transition: background-color 0.2s; /* Ajout transition */
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #5f73bc; /* Bleu plus foncé au survol */
 }
 
 button:disabled {
-    background-color: #cccccc;
-    color: #666666;
+    background-color: #5c6066;
+    color: #999;
     cursor: not-allowed;
     opacity: 0.7;
 }
@@ -64,16 +77,17 @@ button:disabled {
 }
 
 #player-list li {
-    background-color: #f2f2f2;
+    background-color: #3b3f45; /* Fond des noms de joueurs */
     margin: 5px 0;
     padding: 10px;
     border-radius: 5px;
+    color: #f0f8ff; /* Texte clair */
 }
 
 #timer {
     font-size: 2em;
     font-weight: bold;
-    color: #007bff;
+    color: #7289da; /* Bleu Discord */
     margin-bottom: 1em;
 }
 
@@ -82,153 +96,82 @@ button:disabled {
     max-height: 250px;
     margin-bottom: 1em;
     border-radius: 8px;
+    background-color: #555; /* Fond gris si image transparente/erreur */
 }
 
 #question-image.hidden {
     display: none;
 }
 
+/* Catégories (Hôte - cliquable) */
 #category-checkboxes {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin: 15px 0;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 10px; margin: 15px 0; max-width: 500px; margin-left: auto; margin-right: auto;
 }
 
 .category-item {
-    background-color: #007bff;
-    color: white;
-    padding: 8px 15px;
-    border-radius: 20px;
-    cursor: pointer;
+    /* Style initial géré par JS */
+    padding: 8px 15px; border-radius: 20px; cursor: pointer; transition: background-color 0.2s;
 }
+.category-item input { display: none; }
+.category-item label { cursor: pointer; }
 
-.category-item input {
-    display: none;
-}
-
-.category-item label {
-    cursor: pointer;
-}
-
-/* --- NOUVEAU : Styles pour l'écran de Correction --- */
-
-.correction-question-details {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 20px;
-    text-align: left;
-}
-
-#correction-answers-list {
-    margin-top: 15px;
-}
-
-.answer-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #f2f2f2;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-}
-
-.answer-text {
-    text-align: left;
-    flex-grow: 1; /* Permet au texte de prendre tout l'espace disponible */
-}
-
-.answer-text .pseudo {
-    font-weight: bold;
-    display: block;
-}
-
-.validation-checkbox {
-    transform: scale(1.8); /* Rend la case à cocher plus grande et facile à cliquer */
-    margin-left: 20px;
-    cursor: pointer;
-}
-
-.navigation-buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-}
-
-#finish-correction-btn {
-    margin-top: 20px;
-    background-color: #28a745; /* Vert pour terminer */
-}
-
-#finish-correction-btn:hover {
-    background-color: #218838;
-}
-
-
-/* --- NOUVEAU : Styles pour l'écran des Scores --- */
-
-#final-scores-list {
-    list-style-type: none;
-    padding: 0;
-    margin-top: 20px;
-}
-
-#final-scores-list li {
-    background-color: #f2f2f2;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    font-size: 1.2em;
-    font-weight: bold;
-    display: flex;
-    justify-content: space-between;
-}
-
-/* Style "Podium" pour les 3 premiers */
-#final-scores-list li:nth-child(1) {
-    background-color: #ffd700; /* Or */
-}
-#final-scores-list li:nth-child(2) {
-    background-color: #c0c0c0; /* Argent */
-}
-#final-scores-list li:nth-child(3) {
-    background-color: #cd7f32; /* Bronze */
-}
-#confirmation-message {
-    color: #28a745; /* Vert de succès */
-    font-weight: bold;
-    font-size: 1.1em;
-    margin-top: 15px;
-}
+/* Catégories (Joueur - statique) */
 #category-list-player {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin: 15px 0;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 10px; margin: 15px 0; max-width: 500px; margin-left: auto; margin-right: auto;
 }
-
-/* Style des "tags" pour les joueurs */
 .category-item-player {
-    background-color: #007bff; /* Bleu (comme si c'était sélectionné) */
-    color: white;
-    padding: 8px 15px;
-    border-radius: 20px;
+    background-color: #7289da; /* Bleu */
+    color: white; padding: 8px 15px; border-radius: 20px;
 }
 
 .waiting-message {
-    font-style: italic;
-    color: #555;
-    margin-top: 20px;
-    font-size: 1.1em;
+    font-style: italic; color: #bbb; margin-top: 20px; font-size: 1.1em;
+}
+
+/* --- Styles pour l'écran de Correction --- */
+.correction-question-details {
+    background-color: #3b3f45; /* Fond sombre */
+    border: 1px solid #555; border-radius: 5px;
+    padding: 15px; margin-bottom: 20px; text-align: left;
+}
+.correction-question-details strong { color: #fff; }
+
+#correction-answers-list { margin-top: 15px; }
+
+.answer-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background-color: #3b3f45; /* Fond sombre */
+    padding: 10px; border-radius: 5px; margin-bottom: 10px;
+    color: #f0f8ff; /* Texte clair */
+    border: 1px solid #4f545c; /* Bordure subtile */
+}
+.answer-text { text-align: left; flex-grow: 1; }
+.answer-text .pseudo { font-weight: bold; display: block; color: #fff; }
+.validation-checkbox { transform: scale(1.8); margin-left: 20px; cursor: pointer; accent-color: #7289da; /* Change couleur coche */}
+
+.navigation-buttons { display: flex; justify-content: space-between; margin-top: 20px; }
+
+#finish-correction-btn { margin-top: 20px; background-color: #43b581; /* Vert Discord */ }
+#finish-correction-btn:hover { background-color: #3aa571; }
+
+/* --- Styles pour l'écran des Scores --- */
+#final-scores-list { list-style-type: none; padding: 0; margin-top: 20px; }
+
+#final-scores-list li {
+    background-color: #3b3f45; /* Fond sombre */
+    padding: 15px; margin-bottom: 10px; border-radius: 5px;
+    font-size: 1.2em; font-weight: bold; display: flex; justify-content: space-between;
+    color: #f0f8ff; /* Texte clair */
+    border: 1px solid #4f545c; /* Bordure subtile */
+}
+/* Style Podium */
+#final-scores-list li:nth-child(1) { background-color: #faa61a; color: #333; } /* Or Discord */
+#final-scores-list li:nth-child(2) { background-color: #99aab5; color: #333; } /* Argent Discord */
+#final-scores-list li:nth-child(3) { background-color: #976b4c; color: #fff; } /* Bronze Discord */
+
+#confirmation-message {
+    color: #43b581; /* Vert Discord */
+    font-weight: bold; font-size: 1.1em; margin-top: 15px;
 }

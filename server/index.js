@@ -59,7 +59,7 @@ function startQuizTimer(roomCode) {
     room.players.forEach(p => p.score = 0); // Reset scores
 
     const sendNextQuestion = () => {
-        const maxQuestions = 3; // Keep low for testing
+        const maxQuestions = 20; // Keep low for testing
         if (room.currentQuestionIndex >= room.questions.length || room.currentQuestionIndex >= maxQuestions) {
             setTimeout(() => {
                 // Check if room still exists before proceeding
@@ -150,7 +150,7 @@ io.on('connection', (socket) => {
 
     socket.on('startGame', async ({ roomCode, selectedCategories }) => {
         const room = rooms[roomCode];
-        const maxQuestions = 3;
+        const maxQuestions = 20;
         if (room && room.hostId === socket.id) {
              if (!Array.isArray(selectedCategories) || selectedCategories.length === 0) { socket.emit('error', 'Aucune catégorie sélectionnée.'); return; }
             console.log(`▶️ Lancement quiz ${roomCode} cats: ${selectedCategories.join(', ')}`);
