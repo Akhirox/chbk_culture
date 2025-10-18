@@ -216,40 +216,51 @@ function displayScores(scores) {
     });
 }
 
-function populateCategoryLists(categories, selectedCategories) {
-    if (!categoryCheckboxesContainer || !categoryListPlayer) { console.error("Cannot populate category lists, containers missing"); return; }
-    categoryCheckboxesContainer.innerHTML = '';
-    categoryListPlayer.innerHTML = '';
-    const selectedSet = new Set(Array.isArray(selectedCategories) ? selectedCategories : categories);
+function populateCategoryLists(fullCategoryList, selectedCategoryList) {
+    // Re-select containers within the function for safety
+    const hostContainer = document.getElementById('category-checkboxes');
+    const playerContainer = document.getElementById('category-list-player');
 
-    if (categories && Array.isArray(categories)) {
-        categories.forEach(category => {
-            const isSelected = selectedSet.has(category);
-            // Host checkboxes
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'category-item';
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox'; checkbox.id = `cat-${category}`; checkbox.name = 'category-checkbox'; checkbox.value = category; checkbox.checked = isSelected;
-            const label = document.createElement('label');
-            label.htmlFor = `cat-${category}`; label.textContent = category;
-            itemDiv.style.backgroundColor = isSelected ? '#007bff' : '#e9ecef';
-            label.style.color = isSelected ? 'white' : 'black';
-            itemDiv.appendChild(checkbox); itemDiv.appendChild(label);
-            categoryCheckboxesContainer.appendChild(itemDiv);
-
-            // Player list items (only show selected)
-            if (isSelected) {
-                const playerItem = document.createElement('div');
-                playerItem.className = 'category-item-player';
-                playerItem.textContent = category;
-                categoryListPlayer.appendChild(playerItem);
-            }
-        });
-    } else {
-        console.warn("Categories data is missing or not an array");
+    if (!hostContainer || !playerContainer) {
+        console.error("Cannot populate category lists, containers missing");
+        return;
     }
-    // Ensure delegate listener is attached/reattached AFTER repopulating
-    attachCategoryClickListener();
+    hostContainer.innerHTML = '';
+    playerContainer.innerHTML = '';
+
+    // Ensure we have valid arrays to work with
+    const categoriesToDisplay = Array.isArray(fullCategoryList) ? fullCategoryList : [];
+    const selectedSet = new Set(Array.isArray(selectedCategoryList) ? selectedCategoryList : categoriesToDisplay); // Default to all selected if selection missing
+
+    console.log("Populating categories. Full:", categoriesToDisplay, "Selected:", Array.from(selectedSet)); // Debug log
+
+    categoriesToDisplay.forEach(category => {
+        const isSelected = selectedSet.has(category);
+
+        // Host checkboxes (always show all, check based on isSelected)
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'category-item';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox'; checkbox.id = `cat-${category}`; checkbox.name = 'category-checkbox'; checkbox.value = category;
+        checkbox.checked = isSelected; // Set checked state
+        const label = document.createElement('label');
+        label.htmlFor = `cat-${category}`; label.textContent = category;
+        // Set style based on isSelected
+        itemDiv.style.backgroundColor = isSelected ? '#007bff' : '#e9ecef';
+        label.style.color = isSelected ? 'white' : 'black';
+        itemDiv.appendChild(checkbox); itemDiv.appendChild(label);
+        hostContainer.appendChild(itemDiv);
+
+        // Player list items (only show if selected)
+        if (isSelected) {
+            const playerItem = document.createElement('div');
+            playerItem.className = 'category-item-player';
+            playerItem.textContent = category;
+            playerContainer.appendChild(playerItem);
+        }
+    });
+    // Attach listener AFTER populating the host container
+    attachCategoryClickListener(hostContainer);
 }
 
 
@@ -427,65 +438,86 @@ if (socket) {
     socket.on('disconnect', (reason) => { console.log("Socket disconnected:", reason); });
 
     socket.on('roomCreated', (roomData) => {
-        console.log('Room créée !', roomData);
-        if (!roomData) return;
-        currentHostId = roomData.hostId;
-        isHost = (socket && socket.id === currentHostId); // Check socket
-        showLobby(roomData);
-        // Listener attached inside populateCategoryLists -> attachCategoryClickListener
-    });
+    console.log('Room créée !', roomData);
+    if (!roomData) return;
+    currentHostId = roomData.hostId;
+    isHost = (socket && socket.id === currentHostId);
+    allAvailableCategories = roomData.categories || []; // Store the full list
+
+    showLobby(roomData); // Rebuilds DOM, calls updatePlayerListView, updateLobbyView
+
+    // Populate lists using the correct data from roomData
+    populateCategoryLists(allAvailableCategories, roomData.selectedCategories);
+
+    // Listener is attached inside populateCategoryLists
+});
 
     socket.on('updatePlayerList', (data) => {
-        console.log('Liste des joueurs mise à jour', data);
-        if (!data || !data.players || !data.hostId || !data.categories || !data.selectedCategories) return;
-        currentHostId = data.hostId;
-        isHost = (socket && socket.id === currentHostId); // Check socket
+    console.log('Liste des joueurs mise à jour', data);
+    if (!data || !data.players || !data.hostId || !data.categories || !data.selectedCategories) return;
+    currentHostId = data.hostId;
+    isHost = (socket && socket.id === currentHostId);
+    allAvailableCategories = data.categories || []; // Update/Store the full list
 
-        let lobbyJustShown = false;
-        if (homeScreen && !homeScreen.classList.contains('hidden')) {
-            if (!lobbyScreen || !roomCodeInput) return;
-            homeScreen.classList.add('hidden'); lobbyScreen.classList.remove('hidden'); lobbyJustShown = true;
-            currentRoomCode = roomCodeInput.value.toUpperCase();
-            roomCodeDisplay = document.getElementById('room-code-display');
-            if (roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode; else console.log("roomCodeDisplay not found after join");
-        }
+    let lobbyJustShown = false;
+    // Show lobby if joining
+    if (homeScreen && !homeScreen.classList.contains('hidden')) {
+        if (!lobbyScreen || !roomCodeInput) return;
+        homeScreen.classList.add('hidden'); lobbyScreen.classList.remove('hidden'); lobbyJustShown = true;
+        currentRoomCode = roomCodeInput.value.toUpperCase();
+        // showLobby will rebuild, no need to set textContent here
+    }
 
-        categoryCheckboxesContainer = document.getElementById('category-checkboxes');
-        categoryListPlayer = document.getElementById('category-list-player');
+    // If lobby was just rebuilt, showLobby already handled population and view updates.
+    // If lobby was *already* visible, we need to update things manually.
+    if (!lobbyJustShown) {
+         // Re-select elements just in case
+         roomCodeDisplay = document.getElementById('room-code-display');
+         playerList = document.getElementById('player-list');
+         hostControls = document.getElementById('host-controls');
+         playerView = document.getElementById('player-view');
+         categoryCheckboxesContainer = document.getElementById('category-checkboxes');
+         categoryListPlayer = document.getElementById('category-list-player');
+         startGameBtn = document.getElementById('start-game-btn'); // Re-select start button too
 
-        if (lobbyJustShown || !categoryCheckboxesContainer || categoryCheckboxesContainer.innerHTML === '') {
-            populateCategoryLists(data.categories, data.selectedCategories);
-        }
+        if (roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode;
 
-        updatePlayerListView(data.players);
-        updateLobbyView();
-    });
+        updatePlayerListView(data.players); // Update player list content
+        // Repopulate categories to reflect current selection state accurately
+        populateCategoryLists(allAvailableCategories, data.selectedCategories);
+        updateLobbyView(); // Update host/player visibility
+    } else {
+        // If lobby *was* just rebuilt by a joining player, call showLobby again
+        // to ensure it uses the absolute latest data received in this event.
+         showLobby(data);
+         // populateCategoryLists is called inside showLobby in this case
+    }
+});
 
-    socket.on('updateSelectedCategories', (selectedCategories) => {
-        if (!isHost && categoryListPlayer && Array.isArray(selectedCategories)) {
-             console.log("Updating displayed categories for player:", selectedCategories);
-             categoryListPlayer.innerHTML = '';
-             // Re-populate based on full list (if available) vs selected
-             const allCategories = correctionData ? correctionData.categories : (rooms[currentRoomCode] ? rooms[currentRoomCode].categories : []); // Best guess
-              if (allCategories.length > 0) {
-                   allCategories.forEach(category => {
-                       if (selectedCategories.includes(category)) {
-                            const playerItem = document.createElement('div');
-                            playerItem.className = 'category-item-player';
-                            playerItem.textContent = category;
-                            categoryListPlayer.appendChild(playerItem);
-                       }
-                   });
-              } else { // Fallback if full list isn't known
-                   selectedCategories.forEach(category => { /* ... create element ... */});
-              }
-        }
-        if (isHost && categoryCheckboxesContainer && Array.isArray(selectedCategories)){
-             console.log("Syncing host checkboxes with server state:", selectedCategories);
-             const checkBoxes = categoryCheckboxesContainer.querySelectorAll('input[name="category-checkbox"]');
-             checkBoxes.forEach(checkbox => { /* ... sync state and style ... */ });
-        }
-    });
+    OK. Replace just the socket.on('updateSelectedCategories', ...) block in your app.js with this corrected version:
+
+JavaScript
+
+socket.on('updateSelectedCategories', (selectedCategories) => {
+    console.log("Server updated selected categories:", selectedCategories);
+
+    // Ensure selectedCategories is an array before proceeding
+    if (!Array.isArray(selectedCategories)) {
+        console.error("Received invalid selectedCategories data:", selectedCategories);
+        selectedCategories = []; // Fallback to empty array
+    }
+
+    // Always repopulate lists to reflect the change, using the globally stored full list
+    // Re-select containers within the handler for safety, in case they changed
+    categoryCheckboxesContainer = document.getElementById('category-checkboxes');
+    categoryListPlayer = document.getElementById('category-list-player');
+
+    // Call the populate function with the full list and the new selected list
+    populateCategoryLists(allAvailableCategories, selectedCategories);
+
+    // We also need to update the host/player view in case it wasn't correct
+    updateLobbyView();
+});
 
     socket.on('newQuestion', ({ question, questionIndex, totalQuestions }) => {
          if (!lobbyScreen || !quizScreen || !questionImage || !questionText || !answerInput || !submitAnswerBtn || !confirmationMessage) { console.error("Missing elements"); return; }
