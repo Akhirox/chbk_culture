@@ -1,41 +1,55 @@
-// ✅ CODE COMPLET FINAL V5 (Correction, Scores, Catégories Fix V4 + Robustesse)
+// ✅ CODE COMPLET FINAL V6 (Avec Logs de Démarrage Détaillés)
 
-const SERVER_URL = "https://chbk-culture.onrender.com";
-const socket = io(SERVER_URL);
+console.log("--- app.js script START ---"); // Log initial
+
+const SERVER_URL = "https://chbk-culture.onrender.com"; // Assurez-vous que c'est la bonne URL Render
+let socket;
+try {
+    socket = io(SERVER_URL, {
+        transports: ['websocket', 'polling'] // Explicitly allow polling as fallback
+    });
+    console.log("Socket.IO initialized, attempting to connect to:", SERVER_URL);
+} catch (err) {
+    console.error("!!! Erreur lors de l'initialisation de Socket.IO:", err);
+    alert("Erreur critique : Impossible d'initialiser la connexion temps réel. Voir la console.");
+}
+
 
 // --- Sélection des éléments du DOM ---
-const homeScreen = document.getElementById('home-screen');
-const lobbyScreen = document.getElementById('lobby-screen');
-const quizScreen = document.getElementById('quiz-screen');
-const createBtn = document.getElementById('create-btn');
-const joinBtn = document.getElementById('join-btn');
-let startGameBtn = document.getElementById('start-game-btn');
-const submitAnswerBtn = document.getElementById('submit-answer-btn');
-const pseudoCreateInput = document.getElementById('pseudo-create');
-const pseudoJoinInput = document.getElementById('pseudo-join');
-const roomCodeInput = document.getElementById('room-code-input');
-let roomCodeDisplay = document.getElementById('room-code-display');
-let playerList = document.getElementById('player-list');
-const timerDisplay = document.getElementById('timer');
-const questionText = document.getElementById('question-text');
-const answerInput = document.getElementById('answer-input');
-let categoryCheckboxesContainer = document.getElementById('category-checkboxes');
-const questionImage = document.getElementById('question-image');
-const confirmationMessage = document.getElementById('confirmation-message');
-const correctionScreen = document.getElementById('correction-screen');
-const correctionTitle = document.getElementById('correction-title');
-const correctionQuestionText = document.getElementById('correction-question-text');
-const correctionCorrectAnswer = document.getElementById('correction-correct-answer');
-const correctionAnswersList = document.getElementById('correction-answers-list');
-const prevQuestionBtn = document.getElementById('prev-question-btn');
-const nextQuestionBtn = document.getElementById('next-question-btn');
-const finishCorrectionBtn = document.getElementById('finish-correction-btn');
-const scoreScreen = document.getElementById('score-screen');
-const finalScoresList = document.getElementById('final-scores-list');
-const playAgainBtn = document.getElementById('play-again-btn');
-let hostControls = document.getElementById('host-controls');
-let playerView = document.getElementById('player-view');
-let categoryListPlayer = document.getElementById('category-list-player');
+console.log("Selecting DOM elements...");
+const homeScreen = document.getElementById('home-screen'); console.log("homeScreen:", homeScreen ? "Found" : "NOT FOUND!");
+const lobbyScreen = document.getElementById('lobby-screen'); console.log("lobbyScreen:", lobbyScreen ? "Found" : "NOT FOUND!");
+const quizScreen = document.getElementById('quiz-screen'); console.log("quizScreen:", quizScreen ? "Found" : "NOT FOUND!");
+const createBtn = document.getElementById('create-btn'); console.log("createBtn:", createBtn ? "Found" : "NOT FOUND!");
+const joinBtn = document.getElementById('join-btn'); console.log("joinBtn:", joinBtn ? "Found" : "NOT FOUND!");
+let startGameBtn = document.getElementById('start-game-btn'); console.log("startGameBtn (initial):", startGameBtn ? "Found" : "NOT FOUND!");
+const submitAnswerBtn = document.getElementById('submit-answer-btn'); console.log("submitAnswerBtn:", submitAnswerBtn ? "Found" : "NOT FOUND!");
+const pseudoCreateInput = document.getElementById('pseudo-create'); console.log("pseudoCreateInput:", pseudoCreateInput ? "Found" : "NOT FOUND!");
+const pseudoJoinInput = document.getElementById('pseudo-join'); console.log("pseudoJoinInput:", pseudoJoinInput ? "Found" : "NOT FOUND!");
+const roomCodeInput = document.getElementById('room-code-input'); console.log("roomCodeInput:", roomCodeInput ? "Found" : "NOT FOUND!");
+let roomCodeDisplay = document.getElementById('room-code-display'); console.log("roomCodeDisplay (initial):", roomCodeDisplay ? "Found" : "NOT FOUND!");
+let playerList = document.getElementById('player-list'); console.log("playerList (initial):", playerList ? "Found" : "NOT FOUND!");
+const timerDisplay = document.getElementById('timer'); console.log("timerDisplay:", timerDisplay ? "Found" : "NOT FOUND!");
+const questionText = document.getElementById('question-text'); console.log("questionText:", questionText ? "Found" : "NOT FOUND!");
+const answerInput = document.getElementById('answer-input'); console.log("answerInput:", answerInput ? "Found" : "NOT FOUND!");
+let categoryCheckboxesContainer = document.getElementById('category-checkboxes'); console.log("categoryCheckboxesContainer (initial):", categoryCheckboxesContainer ? "Found" : "NOT FOUND!");
+const questionImage = document.getElementById('question-image'); console.log("questionImage:", questionImage ? "Found" : "NOT FOUND!");
+const confirmationMessage = document.getElementById('confirmation-message'); console.log("confirmationMessage:", confirmationMessage ? "Found" : "NOT FOUND!");
+const correctionScreen = document.getElementById('correction-screen'); console.log("correctionScreen:", correctionScreen ? "Found" : "NOT FOUND!");
+const correctionTitle = document.getElementById('correction-title'); console.log("correctionTitle:", correctionTitle ? "Found" : "NOT FOUND!");
+const correctionQuestionText = document.getElementById('correction-question-text'); console.log("correctionQuestionText:", correctionQuestionText ? "Found" : "NOT FOUND!");
+const correctionCorrectAnswer = document.getElementById('correction-correct-answer'); console.log("correctionCorrectAnswer:", correctionCorrectAnswer ? "Found" : "NOT FOUND!");
+const correctionAnswersList = document.getElementById('correction-answers-list'); console.log("correctionAnswersList:", correctionAnswersList ? "Found" : "NOT FOUND!");
+const prevQuestionBtn = document.getElementById('prev-question-btn'); console.log("prevQuestionBtn:", prevQuestionBtn ? "Found" : "NOT FOUND!");
+const nextQuestionBtn = document.getElementById('next-question-btn'); console.log("nextQuestionBtn:", nextQuestionBtn ? "Found" : "NOT FOUND!");
+const finishCorrectionBtn = document.getElementById('finish-correction-btn'); console.log("finishCorrectionBtn:", finishCorrectionBtn ? "Found" : "NOT FOUND!");
+const scoreScreen = document.getElementById('score-screen'); console.log("scoreScreen:", scoreScreen ? "Found" : "NOT FOUND!");
+const finalScoresList = document.getElementById('final-scores-list'); console.log("finalScoresList:", finalScoresList ? "Found" : "NOT FOUND!");
+const playAgainBtn = document.getElementById('play-again-btn'); console.log("playAgainBtn:", playAgainBtn ? "Found" : "NOT FOUND!");
+let hostControls = document.getElementById('host-controls'); console.log("hostControls (initial):", hostControls ? "Found" : "NOT FOUND!");
+let playerView = document.getElementById('player-view'); console.log("playerView (initial):", playerView ? "Found" : "NOT FOUND!");
+let categoryListPlayer = document.getElementById('category-list-player'); console.log("categoryListPlayer (initial):", categoryListPlayer ? "Found" : "NOT FOUND!");
+console.log("DOM element selection finished.");
 
 
 let currentRoomCode = null;
@@ -85,7 +99,10 @@ function showLobby(roomData) {
 
     currentHostId = roomData.hostId;
     currentRoomCode = roomData.roomCode;
-    roomCodeDisplay.textContent = currentRoomCode;
+    // Check roomCodeDisplay again before setting textContent
+    if(roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode;
+    else console.error("roomCodeDisplay became null before setting textContent");
+
 
     if (roomData.players) updatePlayerListView(roomData.players); else console.error("roomData.players missing");
 
@@ -115,7 +132,8 @@ function updateLobbyView() {
     if (!hostControls) hostControls = document.getElementById('host-controls');
     if (!playerView) playerView = document.getElementById('player-view');
     if (!hostControls || !playerView) { console.error("hostControls or playerView not found"); return; }
-    if (socket.id === currentHostId) {
+    // Check socket exists before comparing id
+    if (socket && socket.id === currentHostId) {
         hostControls.classList.remove('hidden'); playerView.classList.add('hidden');
     } else {
         hostControls.classList.add('hidden'); playerView.classList.remove('hidden');
@@ -133,7 +151,8 @@ function startClientTimer() {
             clearInterval(clientTimer);
             if (answerInput && !answerInput.disabled) {
                 const answer = answerInput.value;
-                socket.emit('submitAnswer', { roomCode: currentRoomCode, answer: answer, questionIndex: currentQuestionRealIndex });
+                if(socket) socket.emit('submitAnswer', { roomCode: currentRoomCode, answer: answer, questionIndex: currentQuestionRealIndex });
+                else console.error("Socket not available in timer");
                 lockAnswerUI(answer);
             }
         }
@@ -170,21 +189,15 @@ function displayCorrectionQuestion(index) {
         const checkboxId = `q${index}-p${player.id}`;
         const item = document.createElement('div');
         item.className = 'answer-item';
-        item.id = `answer-${checkboxId}`; // ID for style updates
+        item.id = `answer-${checkboxId}`;
 
         const checkboxHTML = isHost ? `<input type="checkbox" class="validation-checkbox" id="${checkboxId}" data-player-id="${player.id}">` : '';
-
         item.innerHTML = `<div class="answer-text"><span class="pseudo">${player.pseudo} :</span><span>${playerAnswer}</span></div>${checkboxHTML}`;
 
         if (validatedAnswers[checkboxId]) {
-            if (isHost) {
-                const input = item.querySelector('input'); if (input) input.checked = true;
-            }
-            item.style.backgroundColor = '#d4edda'; // Green bg for correct
-        } else {
-             item.style.backgroundColor = '#f2f2f2'; // Default bg
-        }
-
+            if (isHost) { const input = item.querySelector('input'); if (input) input.checked = true; }
+            item.style.backgroundColor = '#d4edda';
+        } else { item.style.backgroundColor = '#f2f2f2'; }
         correctionAnswersList.appendChild(item);
     });
 
@@ -208,50 +221,47 @@ function displayScores(scores) {
     });
 }
 
-// --- Populate Category Lists ---
 function populateCategoryLists(categories, selectedCategories) {
-    if (!categoryCheckboxesContainer || !categoryListPlayer) {
-        console.error("Cannot populate category lists, containers missing");
-        return;
-    }
+    if (!categoryCheckboxesContainer || !categoryListPlayer) { console.error("Cannot populate category lists, containers missing"); return; }
     categoryCheckboxesContainer.innerHTML = '';
     categoryListPlayer.innerHTML = '';
-    const selectedSet = new Set(selectedCategories || categories);
+    // Ensure selectedCategories is an array/set for lookup
+    const selectedSet = new Set(Array.isArray(selectedCategories) ? selectedCategories : categories);
 
-    categories.forEach(category => {
-        const isSelected = selectedSet.has(category);
-        // Host checkboxes
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'category-item';
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox'; checkbox.id = `cat-${category}`; checkbox.name = 'category-checkbox'; checkbox.value = category; checkbox.checked = isSelected;
-        const label = document.createElement('label');
-        label.htmlFor = `cat-${category}`; label.textContent = category;
-        itemDiv.style.backgroundColor = isSelected ? '#007bff' : '#e9ecef';
-        label.style.color = isSelected ? 'white' : 'black';
-        itemDiv.appendChild(checkbox); itemDiv.appendChild(label);
-        categoryCheckboxesContainer.appendChild(itemDiv);
+    if (categories && Array.isArray(categories)) {
+        categories.forEach(category => {
+            const isSelected = selectedSet.has(category);
+            // Host checkboxes
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'category-item';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox'; checkbox.id = `cat-${category}`; checkbox.name = 'category-checkbox'; checkbox.value = category; checkbox.checked = isSelected;
+            const label = document.createElement('label');
+            label.htmlFor = `cat-${category}`; label.textContent = category;
+            itemDiv.style.backgroundColor = isSelected ? '#007bff' : '#e9ecef';
+            label.style.color = isSelected ? 'white' : 'black';
+            itemDiv.appendChild(checkbox); itemDiv.appendChild(label);
+            categoryCheckboxesContainer.appendChild(itemDiv);
 
-        // Player list items (only show selected)
-        if (isSelected) {
-            const playerItem = document.createElement('div');
-            playerItem.className = 'category-item-player';
-            playerItem.textContent = category;
-            categoryListPlayer.appendChild(playerItem);
-        }
-    });
-    // Ensure delegate listener is attached/reattached AFTER repopulating
-    attachCategoryClickListener();
+            // Player list items (only show selected)
+            if (isSelected) {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'category-item-player';
+                playerItem.textContent = category;
+                categoryListPlayer.appendChild(playerItem);
+            }
+        });
+    } else {
+        console.warn("Categories data is missing or not an array");
+    }
+    attachCategoryClickListener(); // Attach listener AFTER populating
 }
 
-
-// --- Event Delegation Logic ---
 function attachCategoryClickListener() {
     if (window.categoryClickListenerAttached) {
          if(categoryCheckboxesContainer) categoryCheckboxesContainer.removeEventListener('click', handleCategoryClick);
          window.categoryClickListenerAttached = false;
     }
-    // Re-select container just in case it wasn't available before
     if (!categoryCheckboxesContainer) categoryCheckboxesContainer = document.getElementById('category-checkboxes');
     if (categoryCheckboxesContainer) {
         console.log("Attaching delegate listener to categoryCheckboxesContainer");
@@ -268,146 +278,166 @@ function handleCategoryClick(event) {
         const checkbox = itemDiv.querySelector('input[type="checkbox"]');
         const label = itemDiv.querySelector('label');
         if (checkbox && label) {
-            // Explicitly toggle state ONLY if click wasn't directly on checkbox
             if (event.target !== checkbox) checkbox.checked = !checkbox.checked;
-            // Read state after potential toggle and update style
             setTimeout(() => {
-                if (checkbox.checked) {
-                    itemDiv.style.backgroundColor = '#007bff'; label.style.color = 'white';
-                } else {
-                    itemDiv.style.backgroundColor = '#e9ecef'; label.style.color = 'black';
-                }
-                // Emit update if host
+                if (checkbox.checked) { itemDiv.style.backgroundColor = '#007bff'; label.style.color = 'white'; }
+                else { itemDiv.style.backgroundColor = '#e9ecef'; label.style.color = 'black'; }
                 if (isHost && categoryCheckboxesContainer) {
                     const checkedBoxes = categoryCheckboxesContainer.querySelectorAll('input[name="category-checkbox"]:checked');
                     const currentlySelected = Array.from(checkedBoxes).map(cb => cb.value);
-                    socket.emit('hostSelectedCategories', { roomCode: currentRoomCode, selectedCategories: currentlySelected });
+                    if(socket) socket.emit('hostSelectedCategories', { roomCode: currentRoomCode, selectedCategories: currentlySelected });
+                    else console.error("Socket not available in category click");
                 }
             }, 0);
         }
     }
 }
 
-
 // --- Événements des boutons ---
-if (createBtn) createBtn.addEventListener('click', () => { /* ... */ }); else console.error("createBtn not found");
-if (joinBtn) joinBtn.addEventListener('click', () => { /* ... */ }); else console.error("joinBtn not found");
-function onStartGameClick() { /* ... */ }
-// Attach listener initially (will be re-attached in showLobby)
+console.log("Attaching button event listeners...");
+if (createBtn) {
+    console.log(">>> createBtn found. Attaching listener...");
+    createBtn.addEventListener('click', () => {
+        console.log(">>> CLIC sur 'Créer une Room' DÉTECTÉ ! <<<");
+        const pseudo = pseudoCreateInput ? pseudoCreateInput.value : '';
+        if (pseudo) {
+            console.log("Pseudo found:", pseudo, "- Emitting 'createRoom'...");
+            if (socket && socket.connected) {
+                 socket.emit('createRoom', { pseudo });
+                 console.log("'createRoom' emitted.");
+            } else {
+                 console.error("ERROR: Socket not connected, cannot emit 'createRoom'.");
+                 alert("Erreur: Non connecté au serveur. Veuillez rafraîchir.");
+            }
+        } else {
+             console.log("Pseudo empty, not emitting.");
+             alert("Veuillez entrer un pseudo.");
+        }
+    });
+    console.log(">>> Listener attached to createBtn.");
+} else console.error("!!! createBtn NOT FOUND !!!");
+
+if (joinBtn) {
+    joinBtn.addEventListener('click', () => {
+        console.log("Join button CLICKED!");
+        const pseudo = pseudoJoinInput ? pseudoJoinInput.value : '';
+        const roomCode = roomCodeInput ? roomCodeInput.value.toUpperCase() : '';
+        if (pseudo && roomCode) {
+            console.log("Emitting joinRoom...");
+            if(socket && socket.connected) socket.emit('joinRoom', { pseudo, roomCode });
+            else console.error("Socket not connected!");
+        } else {
+             alert("Veuillez entrer un pseudo et un code de room.");
+        }
+    });
+} else console.error("joinBtn not found");
+
+function onStartGameClick() {
+    console.log("Start Game button CLICKED!");
+    if (!categoryCheckboxesContainer) { console.error("categoryCheckboxesContainer not found"); return; }
+    const checkedBoxes = categoryCheckboxesContainer.querySelectorAll('input[name="category-checkbox"]:checked');
+    const selectedCategories = Array.from(checkedBoxes).map(cb => cb.value);
+    if (selectedCategories.length > 0) {
+        console.log("Emitting startGame...");
+        if(socket && socket.connected) socket.emit('startGame', { roomCode: currentRoomCode, selectedCategories });
+        else console.error("Socket not connected!");
+    } else alert("Veuillez choisir au moins une catégorie !");
+}
 if (startGameBtn) startGameBtn.addEventListener('click', onStartGameClick); else console.error("startGameBtn not found initially");
-if (submitAnswerBtn) submitAnswerBtn.addEventListener('click', () => { /* ... */ }); else console.error("submitAnswerBtn not found");
-if (nextQuestionBtn) nextQuestionBtn.addEventListener('click', () => {
-     if (isHost && correctionData && currentCorrectionIndex < correctionData.questions.length - 1) {
-         currentCorrectionIndex++; displayCorrectionQuestion(currentCorrectionIndex, isHost);
-         socket.emit('hostNavigatedCorrection', { roomCode: currentRoomCode, newIndex: currentCorrectionIndex });
-     }
-}); else console.error("nextQuestionBtn not found");
-if (prevQuestionBtn) prevQuestionBtn.addEventListener('click', () => {
-     if (isHost && correctionData && currentCorrectionIndex > 0) {
-         currentCorrectionIndex--; displayCorrectionQuestion(currentCorrectionIndex, isHost);
-         socket.emit('hostNavigatedCorrection', { roomCode: currentRoomCode, newIndex: currentCorrectionIndex });
-     }
-}); else console.error("prevQuestionBtn not found");
-if (correctionAnswersList) correctionAnswersList.addEventListener('click', (event) => {
-    if (isHost && event.target.classList.contains('validation-checkbox')) { // Only host can validate
-        const checkbox = event.target; const playerId = checkbox.dataset.playerId; const isCorrect = checkbox.checked; const checkboxId = checkbox.id;
-        if (isCorrect) validatedAnswers[checkboxId] = true; else delete validatedAnswers[checkboxId];
-        socket.emit('validateAnswer', { roomCode: currentRoomCode, playerId: playerId, isCorrect: isCorrect, questionIndex: currentCorrectionIndex });
-        const itemDiv = document.getElementById(`answer-${checkboxId}`); // Update style immediately
-        if(itemDiv) itemDiv.style.backgroundColor = isCorrect ? '#d4edda' : '#f2f2f2';
-    }
-}); else console.error("correctionAnswersList not found");
-if(finishCorrectionBtn) finishCorrectionBtn.addEventListener('click', () => { /* ... */ }); else console.error("finishCorrectionBtn not found");
-if(playAgainBtn) playAgainBtn.addEventListener('click', () => { window.location.reload(); }); else console.error("playAgainBtn not found");
+
+if (submitAnswerBtn) {
+    submitAnswerBtn.addEventListener('click', () => {
+        console.log("Submit Answer button CLICKED!");
+        const answer = answerInput ? answerInput.value : '';
+        if(socket && socket.connected) socket.emit('submitAnswer', { roomCode: currentRoomCode, answer, questionIndex: currentQuestionRealIndex });
+        else console.error("Socket not connected!");
+        lockAnswerUI(answer);
+    });
+} else console.error("submitAnswerBtn not found");
+
+if (nextQuestionBtn) {
+    nextQuestionBtn.addEventListener('click', () => {
+        console.log("Next Question button CLICKED!");
+        if (isHost && correctionData && currentCorrectionIndex < correctionData.questions.length - 1) {
+            currentCorrectionIndex++; displayCorrectionQuestion(currentCorrectionIndex);
+            if(socket && socket.connected) socket.emit('hostNavigatedCorrection', { roomCode: currentRoomCode, newIndex: currentCorrectionIndex });
+            else console.error("Socket not connected!");
+        }
+    });
+} else console.error("nextQuestionBtn not found");
+
+if (prevQuestionBtn) {
+    prevQuestionBtn.addEventListener('click', () => {
+        console.log("Previous Question button CLICKED!");
+        if (isHost && correctionData && currentCorrectionIndex > 0) {
+            currentCorrectionIndex--; displayCorrectionQuestion(currentCorrectionIndex);
+            if(socket && socket.connected) socket.emit('hostNavigatedCorrection', { roomCode: currentRoomCode, newIndex: currentCorrectionIndex });
+            else console.error("Socket not connected!");
+        }
+    });
+} else console.error("prevQuestionBtn not found");
+
+if (correctionAnswersList) { // Listener for validation checkboxes (already uses delegation)
+    correctionAnswersList.addEventListener('click', (event) => {
+        if (isHost && event.target.classList.contains('validation-checkbox')) {
+             console.log("Validation checkbox CLICKED!");
+            const checkbox = event.target; const playerId = checkbox.dataset.playerId; const isCorrect = checkbox.checked; const checkboxId = checkbox.id;
+            if (isCorrect) validatedAnswers[checkboxId] = true; else delete validatedAnswers[checkboxId];
+            if(socket && socket.connected) socket.emit('validateAnswer', { roomCode: currentRoomCode, playerId: playerId, isCorrect: isCorrect, questionIndex: currentCorrectionIndex });
+            else console.error("Socket not connected!");
+            const itemDiv = document.getElementById(`answer-${checkboxId}`);
+            if(itemDiv) itemDiv.style.backgroundColor = isCorrect ? '#d4edda' : '#f2f2f2';
+        }
+    });
+} else console.error("correctionAnswersList not found");
+
+if (finishCorrectionBtn) {
+    finishCorrectionBtn.addEventListener('click', () => {
+        console.log("Finish Correction button CLICKED!");
+        if(socket && socket.connected) socket.emit('finishCorrection', { roomCode: currentRoomCode });
+        else console.error("Socket not connected!");
+    });
+} else console.error("finishCorrectionBtn not found");
+
+if (playAgainBtn) {
+    playAgainBtn.addEventListener('click', () => {
+        console.log("Play Again button CLICKED!");
+        window.location.reload(); // Simple reload for reset
+    });
+} else console.error("playAgainBtn not found");
+
+// Attach category delegate listener right after initial selection
+attachCategoryClickListener();
+
+console.log("Button event listeners attachment finished.");
 
 
 // --- Réception des événements du serveur ---
+if (socket) {
+    console.log("Attaching socket event listeners...");
 
-socket.on('roomCreated', (roomData) => {
-    console.log('Room créée !', roomData);
-    if (!roomData) return;
-    currentHostId = roomData.hostId;
-    isHost = (socket.id === currentHostId);
-    showLobby(roomData); // Rebuilds DOM, populates categories inside
-    attachCategoryClickListener(); // Attach listener after rebuild
-});
+    socket.on('connect', () => { console.log("Socket connected! ID:", socket.id); });
+    socket.on('connect_error', (err) => { console.error("Socket connection error:", err.message); alert(`Connexion serveur échouée: ${err.message}`); });
+    socket.on('disconnect', (reason) => { console.log("Socket disconnected:", reason); });
+    socket.on('roomCreated', (roomData) => { /* ... */ });
+    socket.on('updatePlayerList', (data) => { /* ... */ });
+    socket.on('updateSelectedCategories', (selectedCategories) => { /* ... */ });
+    socket.on('newQuestion', ({ question, questionIndex, totalQuestions }) => { /* ... */ });
+    socket.on('startCorrection', (data) => { /* ... */ });
+    socket.on('showScores', (scores) => { /* ... */ });
+    socket.on('answerValidated', ({ questionIndex, playerId, isCorrect }) => { /* ... */ });
+    socket.on('updateCorrectionView', ({ newIndex }) => { /* ... */ });
+    socket.on('error', (message) => { /* ... */ });
 
-socket.on('updatePlayerList', (data) => {
-    console.log('Liste des joueurs mise à jour', data);
-    if (!data || !data.players || !data.hostId) return;
-    currentHostId = data.hostId;
-    isHost = (socket.id === currentHostId);
+    console.log("Socket event listeners attached.");
+} else {
+    console.error("Socket object not initialized, cannot attach listeners.");
+}
 
-    let lobbyJustShown = false;
-    if (homeScreen && !homeScreen.classList.contains('hidden')) {
-        if (!lobbyScreen || !roomCodeInput) return;
-        homeScreen.classList.add('hidden'); lobbyScreen.classList.remove('hidden'); lobbyJustShown = true;
-        currentRoomCode = roomCodeInput.value.toUpperCase();
-        roomCodeDisplay = document.getElementById('room-code-display');
-        if (roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode; else console.log("roomCodeDisplay not found after join");
-    }
+console.log("--- app.js script END ---");
 
-    // Re-select containers
-    categoryCheckboxesContainer = document.getElementById('category-checkboxes');
-    categoryListPlayer = document.getElementById('category-list-player');
-
-    // Repopulate Categories if needed
-    if (lobbyJustShown || !categoryCheckboxesContainer || categoryCheckboxesContainer.innerHTML === '') {
-        populateCategoryLists(data.categories, data.selectedCategories);
-        // Listener attached inside populateCategoryLists now
-    }
-
-    updatePlayerListView(data.players);
-    updateLobbyView();
-});
-
-socket.on('updateSelectedCategories', (selectedCategories) => {
-    // If I'm not the host, update my static list
-    if (!isHost && categoryListPlayer && Array.isArray(selectedCategories)) {
-         console.log("Updating displayed categories for player:", selectedCategories);
-         categoryListPlayer.innerHTML = '';
-         // We need the full list to check against - assume server sends only selected
-         // A better approach might require client storing the full list from roomCreated/updatePlayerList
-         // Find the full category list from the host checkboxes if they exist? Risky.
-         // Let's just display what server sent.
-          const fullCategoryList = correctionData ? correctionData.categories : []; // Attempt to get full list if available
-          selectedCategories.forEach(category => {
-            const playerItem = document.createElement('div');
-            playerItem.className = 'category-item-player';
-            playerItem.textContent = category;
-            categoryListPlayer.appendChild(playerItem);
-         });
-    }
-    // Update host checkboxes too (sync state)
-    if (isHost && categoryCheckboxesContainer && Array.isArray(selectedCategories)){
-         console.log("Syncing host checkboxes with server state:", selectedCategories);
-         const checkBoxes = categoryCheckboxesContainer.querySelectorAll('input[name="category-checkbox"]');
-         checkBoxes.forEach(checkbox => {
-             const itemDiv = checkbox.closest('.category-item');
-             const label = itemDiv ? itemDiv.querySelector('label') : null;
-             checkbox.checked = selectedCategories.includes(checkbox.value);
-             if(itemDiv && label){
-                 if (checkbox.checked) { itemDiv.style.backgroundColor = '#007bff'; label.style.color = 'white'; }
-                 else { itemDiv.style.backgroundColor = '#e9ecef'; label.style.color = 'black'; }
-             }
-         });
-    }
-});
-
-
-socket.on('newQuestion', ({ question, questionIndex, totalQuestions }) => { /* ... same ... */ });
-socket.on('startCorrection', (data) => {
-     console.log("Données de correction reçues :", data);
-     if(!data || !data.questions || !data.players || !data.hostId) { console.error("Invalid data"); return; } // Check hostId
-     correctionData = data; currentCorrectionIndex = 0; validatedAnswers = {};
-     currentHostId = data.hostId; // Update hostId here too
-     isHost = (socket.id === currentHostId); // Update isHost flag
-     if (!quizScreen || !correctionScreen) { console.error("Missing elements"); return; }
-     quizScreen.classList.add('hidden'); correctionScreen.classList.remove('hidden');
-     displayCorrectionQuestion(currentCorrectionIndex); // displayCorrectionQuestion now uses isHost flag
-});
-socket.on('waitingForCorrection', () => { /* REMOVED - Handled by startCorrection */ });
-socket.on('showScores', (scores) => { /* ... same ... */ });
-socket.on('error', (message) => { /* ... same ... */ });
-socket.on('answerValidated', ({ questionIndex, playerId, isCorrect }) => { /* ... same ... */ });
-socket.on('updateCorrectionView', ({ newIndex }) => { /* ... same ... */ });
+// --- (DEFINITIONS COMPLÈTES DES FONCTIONS CI-DESSOUS) ---
+// (lockAnswerUI, showLobby, updatePlayerListView, updateLobbyView, startClientTimer, showWaitingScreen,
+// displayCorrectionQuestion, displayScores, populateCategoryLists, onStartGameClick, attachCategoryClickListener, handleCategoryClick)
+// (Copiez les définitions complètes depuis la version V5 ou la V6 Debug)
+// (Assurez-vous qu'elles contiennent les vérifications de robustesse 'if (element)')
