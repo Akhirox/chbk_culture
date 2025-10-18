@@ -1,61 +1,55 @@
-# Nom du workflow qui apparaîtra dans l'onglet Actions de GitHub
+# Nom du workflow
 name: Deploy Frontend to GitHub Pages
 
-# Déclencheurs : Quand exécuter ce workflow ?
+# Déclencheurs
 on:
-  # Exécuter quand on pousse sur la branche 'main'
   push:
     branches:
       - main
-    # Seulement si des fichiers ont changé dans le dossier 'client'
     paths:
-      - 'client/**'
-
-  # Permet de lancer manuellement ce workflow depuis l'onglet Actions
+      - 'client/**' # Only run if client files change
   workflow_dispatch:
 
-# Permissions nécessaires pour le déploiement sur GitHub Pages
+# Permissions
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Permet une seule exécution concurrente, annule les déploiements précédents si on pousse à nouveau rapidement
+# Concurrency
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
-# Jobs à exécuter
+# Jobs
 jobs:
-  # Job unique pour le déploiement
   deploy:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }} # URL où le site sera déployé
-    runs-on: ubuntu-latest # Type de machine virtuelle à utiliser
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
     steps:
-      # 1. Récupérer le code du dépôt
+      # 1. Récupérer le code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Configurer GitHub Pages
+      # 2. Configurer Pages (PAS BESOIN DE NODE ICI)
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      # 3. "Build" du site (ici, juste copier les fichiers du dossier 'client')
-      - name: Build static site
+      # 3. Copier les fichiers du dossier 'client' (PAS DE BUILD NPM)
+      - name: Prepare artifact directory
         run: |
-          mkdir _site # Crée un dossier temporaire pour l'artefact
-          cp -a client/. _site/ # Copie tout le contenu de 'client' dans '_site'
+          mkdir _site
+          cp -a client/. _site/
 
-      # 4. Charger l'artefact (le contenu du site) pour GitHub Pages
+      # 4. Charger l'artefact
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Charger le contenu du dossier '_site'
           path: './_site'
 
-      # 5. Déployer l'artefact sur GitHub Pages
+      # 5. Déployer sur GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
