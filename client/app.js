@@ -99,20 +99,16 @@ function showLobby(roomData) {
 
     currentHostId = roomData.hostId;
     currentRoomCode = roomData.roomCode;
-    // Check roomCodeDisplay again before setting textContent
     if(roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode;
     else console.error("roomCodeDisplay became null before setting textContent");
 
-
     if (roomData.players) updatePlayerListView(roomData.players); else console.error("roomData.players missing");
 
-    // Populate categories
     populateCategoryLists(roomData.categories, roomData.selectedCategories);
 
     updateLobbyView();
     console.log("--- Exiting showLobby ---");
 }
-
 
 function updatePlayerListView(players) {
     if (!players) { console.error("No players data"); return; }
@@ -121,9 +117,9 @@ function updatePlayerListView(players) {
     playerList.innerHTML = '';
     players.forEach(player => {
         const li = document.createElement('li');
-        const isHost = currentHostId && (player.id === currentHostId);
-        li.textContent = player.pseudo + (isHost ? ' 👑' : '');
-        if (isHost) li.style.fontWeight = 'bold';
+        const isHostPlayer = currentHostId && (player.id === currentHostId);
+        li.textContent = player.pseudo + (isHostPlayer ? ' 👑' : '');
+        if (isHostPlayer) li.style.fontWeight = 'bold';
         playerList.appendChild(li);
     });
 }
@@ -132,8 +128,7 @@ function updateLobbyView() {
     if (!hostControls) hostControls = document.getElementById('host-controls');
     if (!playerView) playerView = document.getElementById('player-view');
     if (!hostControls || !playerView) { console.error("hostControls or playerView not found"); return; }
-    // Check socket exists before comparing id
-    if (socket && socket.id === currentHostId) {
+    if (socket && socket.id === currentHostId) { // Check socket exists
         hostControls.classList.remove('hidden'); playerView.classList.add('hidden');
     } else {
         hostControls.classList.add('hidden'); playerView.classList.remove('hidden');
@@ -225,7 +220,6 @@ function populateCategoryLists(categories, selectedCategories) {
     if (!categoryCheckboxesContainer || !categoryListPlayer) { console.error("Cannot populate category lists, containers missing"); return; }
     categoryCheckboxesContainer.innerHTML = '';
     categoryListPlayer.innerHTML = '';
-    // Ensure selectedCategories is an array/set for lookup
     const selectedSet = new Set(Array.isArray(selectedCategories) ? selectedCategories : categories);
 
     if (categories && Array.isArray(categories)) {
@@ -254,19 +248,23 @@ function populateCategoryLists(categories, selectedCategories) {
     } else {
         console.warn("Categories data is missing or not an array");
     }
-    attachCategoryClickListener(); // Attach listener AFTER populating
+    // Ensure delegate listener is attached/reattached AFTER repopulating
+    attachCategoryClickListener();
 }
 
+
 function attachCategoryClickListener() {
-    if (window.categoryClickListenerAttached) {
-         if(categoryCheckboxesContainer) categoryCheckboxesContainer.removeEventListener('click', handleCategoryClick);
-         window.categoryClickListenerAttached = false;
-    }
+    // Ensure container exists before attaching listener
     if (!categoryCheckboxesContainer) categoryCheckboxesContainer = document.getElementById('category-checkboxes');
+
     if (categoryCheckboxesContainer) {
-        console.log("Attaching delegate listener to categoryCheckboxesContainer");
-        categoryCheckboxesContainer.addEventListener('click', handleCategoryClick);
-        window.categoryClickListenerAttached = true;
+         // Remove previous listener IF it was attached to THIS specific element, to prevent duplicates
+         if (categoryCheckboxesContainer.dataset.listenerAttached === 'true') {
+             categoryCheckboxesContainer.removeEventListener('click', handleCategoryClick);
+         }
+         console.log("Attaching delegate listener to categoryCheckboxesContainer");
+         categoryCheckboxesContainer.addEventListener('click', handleCategoryClick);
+         categoryCheckboxesContainer.dataset.listenerAttached = 'true'; // Mark as attached
     } else {
         console.error("categoryCheckboxesContainer not found when trying to attach delegate listener");
     }
@@ -278,10 +276,13 @@ function handleCategoryClick(event) {
         const checkbox = itemDiv.querySelector('input[type="checkbox"]');
         const label = itemDiv.querySelector('label');
         if (checkbox && label) {
+            // Explicitly toggle state ONLY if click wasn't directly on checkbox
             if (event.target !== checkbox) checkbox.checked = !checkbox.checked;
+            // Read state after potential toggle and update style
             setTimeout(() => {
                 if (checkbox.checked) { itemDiv.style.backgroundColor = '#007bff'; label.style.color = 'white'; }
                 else { itemDiv.style.backgroundColor = '#e9ecef'; label.style.color = 'black'; }
+                // Emit update if host
                 if (isHost && categoryCheckboxesContainer) {
                     const checkedBoxes = categoryCheckboxesContainer.querySelectorAll('input[name="category-checkbox"]:checked');
                     const currentlySelected = Array.from(checkedBoxes).map(cb => cb.value);
@@ -292,6 +293,7 @@ function handleCategoryClick(event) {
         }
     }
 }
+
 
 // --- Événements des boutons ---
 console.log("Attaching button event listeners...");
@@ -343,7 +345,11 @@ function onStartGameClick() {
         else console.error("Socket not connected!");
     } else alert("Veuillez choisir au moins une catégorie !");
 }
-if (startGameBtn) startGameBtn.addEventListener('click', onStartGameClick); else console.error("startGameBtn not found initially");
+// Check startGameBtn again before attaching
+if (!startGameBtn) startGameBtn = document.getElementById('start-game-btn'); // Try re-selecting
+if (startGameBtn) startGameBtn.addEventListener('click', onStartGameClick);
+else console.error("startGameBtn not found initially or after lobby rebuild");
+
 
 if (submitAnswerBtn) {
     submitAnswerBtn.addEventListener('click', () => {
@@ -359,7 +365,7 @@ if (nextQuestionBtn) {
     nextQuestionBtn.addEventListener('click', () => {
         console.log("Next Question button CLICKED!");
         if (isHost && correctionData && currentCorrectionIndex < correctionData.questions.length - 1) {
-            currentCorrectionIndex++; displayCorrectionQuestion(currentCorrectionIndex);
+            currentCorrectionIndex++; displayCorrectionQuestion(currentCorrectionIndex); // Pass isHost implicitly now
             if(socket && socket.connected) socket.emit('hostNavigatedCorrection', { roomCode: currentRoomCode, newIndex: currentCorrectionIndex });
             else console.error("Socket not connected!");
         }
@@ -370,7 +376,7 @@ if (prevQuestionBtn) {
     prevQuestionBtn.addEventListener('click', () => {
         console.log("Previous Question button CLICKED!");
         if (isHost && correctionData && currentCorrectionIndex > 0) {
-            currentCorrectionIndex--; displayCorrectionQuestion(currentCorrectionIndex);
+            currentCorrectionIndex--; displayCorrectionQuestion(currentCorrectionIndex); // Pass isHost implicitly now
             if(socket && socket.connected) socket.emit('hostNavigatedCorrection', { roomCode: currentRoomCode, newIndex: currentCorrectionIndex });
             else console.error("Socket not connected!");
         }
@@ -419,15 +425,120 @@ if (socket) {
     socket.on('connect', () => { console.log("Socket connected! ID:", socket.id); });
     socket.on('connect_error', (err) => { console.error("Socket connection error:", err.message); alert(`Connexion serveur échouée: ${err.message}`); });
     socket.on('disconnect', (reason) => { console.log("Socket disconnected:", reason); });
-    socket.on('roomCreated', (roomData) => { /* ... */ });
-    socket.on('updatePlayerList', (data) => { /* ... */ });
-    socket.on('updateSelectedCategories', (selectedCategories) => { /* ... */ });
-    socket.on('newQuestion', ({ question, questionIndex, totalQuestions }) => { /* ... */ });
-    socket.on('startCorrection', (data) => { /* ... */ });
-    socket.on('showScores', (scores) => { /* ... */ });
-    socket.on('answerValidated', ({ questionIndex, playerId, isCorrect }) => { /* ... */ });
-    socket.on('updateCorrectionView', ({ newIndex }) => { /* ... */ });
-    socket.on('error', (message) => { /* ... */ });
+
+    socket.on('roomCreated', (roomData) => {
+        console.log('Room créée !', roomData);
+        if (!roomData) return;
+        currentHostId = roomData.hostId;
+        isHost = (socket && socket.id === currentHostId); // Check socket
+        showLobby(roomData);
+        // Listener attached inside populateCategoryLists -> attachCategoryClickListener
+    });
+
+    socket.on('updatePlayerList', (data) => {
+        console.log('Liste des joueurs mise à jour', data);
+        if (!data || !data.players || !data.hostId || !data.categories || !data.selectedCategories) return;
+        currentHostId = data.hostId;
+        isHost = (socket && socket.id === currentHostId); // Check socket
+
+        let lobbyJustShown = false;
+        if (homeScreen && !homeScreen.classList.contains('hidden')) {
+            if (!lobbyScreen || !roomCodeInput) return;
+            homeScreen.classList.add('hidden'); lobbyScreen.classList.remove('hidden'); lobbyJustShown = true;
+            currentRoomCode = roomCodeInput.value.toUpperCase();
+            roomCodeDisplay = document.getElementById('room-code-display');
+            if (roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode; else console.log("roomCodeDisplay not found after join");
+        }
+
+        categoryCheckboxesContainer = document.getElementById('category-checkboxes');
+        categoryListPlayer = document.getElementById('category-list-player');
+
+        if (lobbyJustShown || !categoryCheckboxesContainer || categoryCheckboxesContainer.innerHTML === '') {
+            populateCategoryLists(data.categories, data.selectedCategories);
+        }
+
+        updatePlayerListView(data.players);
+        updateLobbyView();
+    });
+
+    socket.on('updateSelectedCategories', (selectedCategories) => {
+        if (!isHost && categoryListPlayer && Array.isArray(selectedCategories)) {
+             console.log("Updating displayed categories for player:", selectedCategories);
+             categoryListPlayer.innerHTML = '';
+             // Re-populate based on full list (if available) vs selected
+             const allCategories = correctionData ? correctionData.categories : (rooms[currentRoomCode] ? rooms[currentRoomCode].categories : []); // Best guess
+              if (allCategories.length > 0) {
+                   allCategories.forEach(category => {
+                       if (selectedCategories.includes(category)) {
+                            const playerItem = document.createElement('div');
+                            playerItem.className = 'category-item-player';
+                            playerItem.textContent = category;
+                            categoryListPlayer.appendChild(playerItem);
+                       }
+                   });
+              } else { // Fallback if full list isn't known
+                   selectedCategories.forEach(category => { /* ... create element ... */});
+              }
+        }
+        if (isHost && categoryCheckboxesContainer && Array.isArray(selectedCategories)){
+             console.log("Syncing host checkboxes with server state:", selectedCategories);
+             const checkBoxes = categoryCheckboxesContainer.querySelectorAll('input[name="category-checkbox"]');
+             checkBoxes.forEach(checkbox => { /* ... sync state and style ... */ });
+        }
+    });
+
+    socket.on('newQuestion', ({ question, questionIndex, totalQuestions }) => {
+         if (!lobbyScreen || !quizScreen || !questionImage || !questionText || !answerInput || !submitAnswerBtn || !confirmationMessage) { console.error("Missing elements"); return; }
+         lobbyScreen.classList.add('hidden'); quizScreen.classList.remove('hidden');
+         if (question && question.image) { questionImage.src = question.image; questionImage.classList.remove('hidden'); }
+         else { if(questionImage) { questionImage.src = ''; questionImage.classList.add('hidden'); } }
+         currentQuestionRealIndex = questionIndex - 1;
+         if(questionText && question) questionText.textContent = `Question ${questionIndex}/${totalQuestions}: ${question.question}`;
+         if(answerInput) answerInput.value = ''; if(answerInput) answerInput.disabled = false; if(submitAnswerBtn) submitAnswerBtn.classList.remove('hidden'); if(confirmationMessage) confirmationMessage.classList.add('hidden');
+         if(answerInput) answerInput.focus(); startClientTimer();
+    });
+
+    socket.on('startCorrection', (data) => {
+         console.log("Données de correction reçues :", data);
+         if(!data || !data.questions || !data.players || !data.hostId) { console.error("Invalid data"); return; }
+         correctionData = data; currentCorrectionIndex = 0; validatedAnswers = {};
+         currentHostId = data.hostId;
+         isHost = (socket && socket.id === currentHostId); // Check socket
+         if (!quizScreen || !correctionScreen) { console.error("Missing elements"); return; }
+         quizScreen.classList.add('hidden'); correctionScreen.classList.remove('hidden');
+         displayCorrectionQuestion(currentCorrectionIndex);
+    });
+    // socket.on('waitingForCorrection', () => { /* REMOVED */ });
+
+    socket.on('showScores', (scores) => {
+        console.log("Scores finaux reçus :", scores);
+        if (scores && Array.isArray(scores)) { displayScores(scores); }
+        else { console.error("Invalid scores data received:", scores); }
+    });
+
+    socket.on('answerValidated', ({ questionIndex, playerId, isCorrect }) => {
+        const checkboxId = `q${questionIndex}-p${playerId}`;
+        if (isCorrect) validatedAnswers[checkboxId] = true; else delete validatedAnswers[checkboxId];
+        if (questionIndex === currentCorrectionIndex) {
+            const itemDiv = document.getElementById(`answer-${checkboxId}`);
+            if(itemDiv) itemDiv.style.backgroundColor = isCorrect ? '#d4edda' : '#f2f2f2';
+            // If host, update checkbox state too for consistency
+             if (isHost) {
+                 const checkbox = itemDiv ? itemDiv.querySelector(`#${checkboxId}`) : null;
+                 if (checkbox) checkbox.checked = isCorrect;
+             }
+        }
+    });
+
+    socket.on('updateCorrectionView', ({ newIndex }) => {
+         if (!isHost) {
+             console.log(`Host navigated to question ${newIndex}`);
+             currentCorrectionIndex = newIndex;
+             displayCorrectionQuestion(currentCorrectionIndex); // Pass isHost implicitly
+         }
+    });
+
+    socket.on('error', (message) => { alert(`Erreur : ${message}`); });
 
     console.log("Socket event listeners attached.");
 } else {
@@ -435,9 +546,3 @@ if (socket) {
 }
 
 console.log("--- app.js script END ---");
-
-// --- (DEFINITIONS COMPLÈTES DES FONCTIONS CI-DESSOUS) ---
-// (lockAnswerUI, showLobby, updatePlayerListView, updateLobbyView, startClientTimer, showWaitingScreen,
-// displayCorrectionQuestion, displayScores, populateCategoryLists, onStartGameClick, attachCategoryClickListener, handleCategoryClick)
-// (Copiez les définitions complètes depuis la version V5 ou la V6 Debug)
-// (Assurez-vous qu'elles contiennent les vérifications de robustesse 'if (element)')
