@@ -1,6 +1,6 @@
 // ✅ CODE COMPLET FINAL V5 (Correction, Scores, Catégories Fix V4 + Robustesse)
 
-const SERVER_URL = "http://localhost:3000"; // Ou votre URL Render
+const SERVER_URL = "https://chbk-culture.onrender.com";
 const socket = io(SERVER_URL);
 
 // --- Sélection des éléments du DOM ---
