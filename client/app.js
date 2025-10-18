@@ -494,10 +494,6 @@ if (socket) {
     }
 });
 
-    OK. Replace just the socket.on('updateSelectedCategories', ...) block in your app.js with this corrected version:
-
-JavaScript
-
 socket.on('updateSelectedCategories', (selectedCategories) => {
     console.log("Server updated selected categories:", selectedCategories);
 
