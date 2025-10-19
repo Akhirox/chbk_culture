@@ -144,18 +144,23 @@ io.on('connection', (socket) => {
     });
 
    socket.on('joinRoom', ({ pseudo, roomCode }) => {
-        const room = rooms[roomCode];
-        if (room) {
-            socket.join(roomCode);
-            const newPlayer = { id: socket.id, pseudo: pseudo, score: 0 };
-            room.players.push(newPlayer);
-            io.to(roomCode).emit('updatePlayerList', {
-                players: room.players, hostId: room.hostId, categories: room.categories,
-                selectedCategories: room.selectedCategories // **NOUVEAU**: Send selected
-            });
-            console.log(`👋 ${pseudo} a rejoint ${roomCode}`);
-        } else { socket.emit('error', 'Room inexistante.'); }
-    });
+    const room = rooms[roomCode];
+    if (room) {
+        socket.join(roomCode);
+        const newPlayer = { id: socket.id, pseudo: pseudo, score: 0 };
+        room.players.push(newPlayer);
+
+        io.to(roomCode).emit('updatePlayerList', {
+            roomCode: roomCode, // <-- AJOUTER CETTE LIGNE
+            players: room.players,
+            hostId: room.hostId,
+            categories: room.categories,
+            selectedCategories: room.selectedCategories
+        });
+
+        console.log(`👋 ${pseudo} a rejoint ${roomCode}`);
+    } else { socket.emit('error', 'Room inexistante.'); }
+});
 
    // --- **AJOUTÉ :** Host changes category selection ---
     socket.on('hostSelectedCategories', ({ roomCode, selectedCategories }) => {
@@ -281,30 +286,28 @@ io.on('connection', (socket) => {
      });
 
     socket.on('disconnect', () => {
-         console.log(`❌ Déconnexion : ${socket.id}`);
-        for (const code in rooms) {
-            const room = rooms[code];
-            if (!room || !room.players) continue;
-            const playerIndex = room.players.findIndex(p => p.id === socket.id);
-            if (playerIndex !== -1) {
-                // ... (logique suppression joueur) ...
-                if (room.players.length === 0) {
-                    // --- AJOUT : Nettoyer le timer ---
-                    if (quizTimers[code]) {
-                        clearTimeout(quizTimers[code]);
-                        delete quizTimers[code];
-                        console.log(`[${code}] Timer quiz nettoyé car room vide.`);
-                    }
-                    // --- FIN AJOUT ---
-                    delete rooms[code];
-                    console.log(`💥 Room ${code} supprimée.`);
-                } else {
-                   // ... (logique changement hôte + emit update) ...
-                }
-                break;
+     console.log(`❌ Déconnexion : ${socket.id}`);
+    for (const code in rooms) { // 'code' représente le roomCode ici
+        const room = rooms[code];
+        // ... (logique pour trouver et supprimer le joueur) ...
+        if (playerIndex !== -1) {
+            // ... (logique splice) ...
+            if (room.players.length === 0) {
+                // ... (logique suppression room) ...
+            } else {
+                // ... (logique changement hôte) ...
+                io.to(code).emit('updatePlayerList', {
+                    roomCode: code, // <-- AJOUTER CETTE LIGNE
+                    players: room.players,
+                    hostId: room.hostId,
+                    categories: room.categories,
+                    selectedCategories: room.selectedCategories
+                });
             }
+            break;
         }
-    });
+    }
+});
 });
 
 const PORT = process.env.PORT || 3000;
