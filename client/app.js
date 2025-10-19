@@ -454,44 +454,51 @@ if (socket) {
 
     socket.on('updatePlayerList', (data) => {
     console.log('Liste des joueurs mise à jour', data);
-    if (!data || !data.players || !data.hostId || !data.categories || !data.selectedCategories) return;
+    if (!data || !data.players || !data.hostId || !data.categories || !data.selectedCategories) {
+        console.error("Données invalides reçues dans updatePlayerList", data);
+        return;
+    }
     currentHostId = data.hostId;
     isHost = (socket && socket.id === currentHostId);
-    allAvailableCategories = data.categories || []; // Update/Store the full list
+    allAvailableCategories = data.categories || [];
 
     let lobbyJustShown = false;
-    // Show lobby if joining
+    // --- MODIFICATION START ---
+    // If joining (home screen was visible), set currentRoomCode and show lobby
     if (homeScreen && !homeScreen.classList.contains('hidden')) {
-        if (!lobbyScreen || !roomCodeInput) return;
-        homeScreen.classList.add('hidden'); lobbyScreen.classList.remove('hidden'); lobbyJustShown = true;
+        if (!lobbyScreen || !roomCodeInput) { console.error("Missing elements when joining"); return; }
+
+        // **CRUCIAL: Set currentRoomCode from the input field used to join**
         currentRoomCode = roomCodeInput.value.toUpperCase();
-        // showLobby will rebuild, no need to set textContent here
-    }
+        console.log("Setting currentRoomCode for joining player:", currentRoomCode); // Debug log
 
-    // If lobby was just rebuilt, showLobby already handled population and view updates.
-    // If lobby was *already* visible, we need to update things manually.
-    if (!lobbyJustShown) {
-         // Re-select elements just in case
-         roomCodeDisplay = document.getElementById('room-code-display');
-         playerList = document.getElementById('player-list');
-         hostControls = document.getElementById('host-controls');
-         playerView = document.getElementById('player-view');
-         categoryCheckboxesContainer = document.getElementById('category-checkboxes');
-         categoryListPlayer = document.getElementById('category-list-player');
-         startGameBtn = document.getElementById('start-game-btn'); // Re-select start button too
+        homeScreen.classList.add('hidden');
+        lobbyScreen.classList.remove('hidden');
+        lobbyJustShown = true;
 
+        // Re-select roomCodeDisplay AFTER lobby might be rebuilt (safer)
+        roomCodeDisplay = document.getElementById('room-code-display');
         if (roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode;
+        else console.log("roomCodeDisplay not found after join");
 
-        updatePlayerListView(data.players); // Update player list content
-        // Repopulate categories to reflect current selection state accurately
-        populateCategoryLists(allAvailableCategories, data.selectedCategories);
-        updateLobbyView(); // Update host/player visibility
-    } else {
-        // If lobby *was* just rebuilt by a joining player, call showLobby again
-        // to ensure it uses the absolute latest data received in this event.
-         showLobby(data);
-         // populateCategoryLists is called inside showLobby in this case
+        // Store session info for potential reconnect
+        const currentPseudo = pseudoJoinInput ? pseudoJoinInput.value : null; // Get pseudo used to join
+        if(currentPseudo && currentRoomCode) storeSession(currentPseudo, currentRoomCode);
+
     }
+    // --- MODIFICATION END ---
+
+    // Re-select containers (might be needed if lobbyJustShown is true)
+    categoryCheckboxesContainer = document.getElementById('category-checkboxes');
+    categoryListPlayer = document.getElementById('category-list-player');
+
+    // Repopulate Categories if needed
+    if (lobbyJustShown || !categoryCheckboxesContainer || categoryCheckboxesContainer.innerHTML === '') {
+        populateCategoryLists(allAvailableCategories, data.selectedCategories);
+    }
+
+    updatePlayerListView(data.players);
+    updateLobbyView();
 });
 
 socket.on('updateSelectedCategories', (selectedCategories) => {
