@@ -185,6 +185,7 @@ function startClientTimer() {
             clearInterval(clientTimer);
             if (answerInput && !answerInput.disabled) {
                 const answer = answerInput.value;
+                console.log(`[TimerEnd] Vérification avant émission auto: currentRoomCode = "${currentRoomCode}"`);
                 if(socket && socket.connected) socket.emit('submitAnswer', { roomCode: currentRoomCode, answer: answer, questionIndex: currentQuestionRealIndex });
                 else console.error("Socket not connected in timer");
                 lockAnswerUI(answer);
@@ -392,6 +393,7 @@ if (submitAnswerBtn) {
     submitAnswerBtn.addEventListener('click', () => {
         console.log("Submit Answer button CLICKED!");
         const answer = answerInput ? answerInput.value : '';
+        console.log(`[SubmitClick] Vérification avant émission: currentRoomCode = "${currentRoomCode}"`);
         if(socket && socket.connected) socket.emit('submitAnswer', { roomCode: currentRoomCode, answer, questionIndex: currentQuestionRealIndex });
         else console.error("Socket not connected!");
         lockAnswerUI(answer);
@@ -510,6 +512,7 @@ if (socket) {
         if (homeScreen && !homeScreen.classList.contains('hidden')) {
             if (!lobbyScreen || !roomCodeInput || !pseudoJoinInput) { console.error("[updatePlayerList] Manque éléments pour rejoindre"); return; }
             currentRoomCode = roomCodeInput.value.toUpperCase();
+            console.log(`%c[Player Join] currentRoomCode DÉFINI à: ${currentRoomCode}`, 'color: green; font-weight: bold;');
             console.log("[updatePlayerList] Joueur rejoint, currentRoomCode:", currentRoomCode);
             homeScreen.classList.add('hidden'); lobbyScreen.classList.remove('hidden'); lobbyJustShown = true;
 
