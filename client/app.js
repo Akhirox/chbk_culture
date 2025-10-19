@@ -453,52 +453,81 @@ if (socket) {
 });
 
     socket.on('updatePlayerList', (data) => {
-    console.log('Liste des joueurs mise à jour', data);
+    console.log('[updatePlayerList] Reçu:', data); // Log pour voir les données reçues
     if (!data || !data.players || !data.hostId || !data.categories || !data.selectedCategories) {
-        console.error("Données invalides reçues dans updatePlayerList", data);
+        console.error("[updatePlayerList] Données invalides ou incomplètes reçues", data);
         return;
     }
     currentHostId = data.hostId;
     isHost = (socket && socket.id === currentHostId);
-    allAvailableCategories = data.categories || [];
+    allAvailableCategories = data.categories || []; // Stocker la liste complète
 
-    let lobbyJustShown = false;
-    // --- MODIFICATION START ---
-    // If joining (home screen was visible), set currentRoomCode and show lobby
+    let lobbyNeedsRebuild = false;
+    // Doit-on afficher le lobby pour la première fois (joueur qui rejoint) ?
     if (homeScreen && !homeScreen.classList.contains('hidden')) {
-        if (!lobbyScreen || !roomCodeInput) { console.error("Missing elements when joining"); return; }
+        if (!lobbyScreen || !roomCodeInput || !pseudoJoinInput) { console.error("[updatePlayerList] Manque éléments pour rejoindre"); return; }
 
-        // **CRUCIAL: Set currentRoomCode from the input field used to join**
-        currentRoomCode = roomCodeInput.value.toUpperCase();
-        console.log("Setting currentRoomCode for joining player:", currentRoomCode); // Debug log
+        currentRoomCode = roomCodeInput.value.toUpperCase(); // Définir le code de room ICI
+        console.log("[updatePlayerList] Joueur rejoint, définition de currentRoomCode:", currentRoomCode);
 
         homeScreen.classList.add('hidden');
-        lobbyScreen.classList.remove('hidden');
-        lobbyJustShown = true;
+        lobbyScreen.classList.remove('hidden'); // Afficher le conteneur vide d'abord
+        lobbyNeedsRebuild = true;
 
-        // Re-select roomCodeDisplay AFTER lobby might be rebuilt (safer)
+        // Reconstruire le HTML du lobby
+        console.log("[updatePlayerList] Reconstruction du HTML du lobby...");
+        lobbyScreen.innerHTML = `<h2>Room Code : <span id="room-code-display"></span></h2><h3>Joueurs connectés :</h3><ul id="player-list"></ul><div id="host-controls" class="hidden"><div class="category-selection"><h3>Choisissez les catégories :</h3><div id="category-checkboxes"></div></div><button id="start-game-btn">Lancer le Quiz !</button></div><div id="player-view" class="hidden"><div class="category-selection"><h3>Catégories activées :</h3><div id="category-list-player"></div></div><p class="waiting-message">En attente du lancement par l'hôte...</p></div>`;
+
+        // Re-sélectionner IMMÉDIATEMENT les éléments après la reconstruction
         roomCodeDisplay = document.getElementById('room-code-display');
-        if (roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode;
-        else console.log("roomCodeDisplay not found after join");
+        playerList = document.getElementById('player-list');
+        hostControls = document.getElementById('host-controls');
+        playerView = document.getElementById('player-view');
+        categoryCheckboxesContainer = document.getElementById('category-checkboxes');
+        categoryListPlayer = document.getElementById('category-list-player');
+        startGameBtn = document.getElementById('start-game-btn'); // Re-sélectionner le bouton
 
-        // Store session info for potential reconnect
-        const currentPseudo = pseudoJoinInput ? pseudoJoinInput.value : null; // Get pseudo used to join
-        if(currentPseudo && currentRoomCode) storeSession(currentPseudo, currentRoomCode);
+        // Vérifier si la re-sélection a fonctionné
+        if (!roomCodeDisplay || !playerList || !startGameBtn || !categoryCheckboxesContainer || !categoryListPlayer) {
+             console.error("[updatePlayerList] Échec de la re-sélection des éléments après reconstruction !");
+             return;
+        }
 
+         // Rattacher le listener au NOUVEAU bouton start
+         startGameBtn.addEventListener('click', onStartGameClick);
+
+         // Mettre à jour le code de la room affiché
+         roomCodeDisplay.textContent = currentRoomCode;
+
+         // Stocker la session pour le joueur qui rejoint
+         const currentPseudo = pseudoJoinInput.value;
+         if(currentPseudo && currentRoomCode) storeSession(currentPseudo, currentRoomCode);
+
+    } else {
+        // Si le lobby était déjà affiché, s'assurer que les variables globales pointent vers les bons éléments (au cas où)
+        if (!playerList) playerList = document.getElementById('player-list');
+        if (!categoryCheckboxesContainer) categoryCheckboxesContainer = document.getElementById('category-checkboxes');
+        if (!categoryListPlayer) categoryListPlayer = document.getElementById('category-list-player');
+        if (!hostControls) hostControls = document.getElementById('host-controls');
+        if (!playerView) playerView = document.getElementById('player-view');
     }
-    // --- MODIFICATION END ---
 
-    // Re-select containers (might be needed if lobbyJustShown is true)
-    categoryCheckboxesContainer = document.getElementById('category-checkboxes');
-    categoryListPlayer = document.getElementById('category-list-player');
+    // --- Mise à jour du contenu (toujours exécutée) ---
 
-    // Repopulate Categories if needed
-    if (lobbyJustShown || !categoryCheckboxesContainer || categoryCheckboxesContainer.innerHTML === '') {
-        populateCategoryLists(allAvailableCategories, data.selectedCategories);
-    }
+    // 1. Mettre à jour la liste des joueurs
+    console.log("[updatePlayerList] Appel de updatePlayerListView...");
+    updatePlayerListView(data.players); // Utilise la variable globale playerList (qui a été re-sélectionnée si nécessaire)
 
-    updatePlayerListView(data.players);
-    updateLobbyView();
+    // 2. Mettre à jour les listes de catégories
+    console.log("[updatePlayerList] Appel de populateCategoryLists...");
+    // Utilise les variables globales categoryCheckboxesContainer et categoryListPlayer
+    populateCategoryLists(allAvailableCategories, data.selectedCategories);
+
+    // 3. Mettre à jour la vue Hôte/Joueur
+    console.log("[updatePlayerList] Appel de updateLobbyView...");
+    updateLobbyView(); // Utilise les variables globales hostControls et playerView
+
+    console.log("[updatePlayerList] Terminé.");
 });
 
 socket.on('updateSelectedCategories', (selectedCategories) => {
