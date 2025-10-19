@@ -286,28 +286,56 @@ io.on('connection', (socket) => {
      });
 
     socket.on('disconnect', () => {
-     console.log(`❌ Déconnexion : ${socket.id}`);
-    for (const code in rooms) { // 'code' représente le roomCode ici
-        const room = rooms[code];
-        // ... (logique pour trouver et supprimer le joueur) ...
-        if (playerIndex !== -1) {
-            // ... (logique splice) ...
-            if (room.players.length === 0) {
-                // ... (logique suppression room) ...
-            } else {
-                // ... (logique changement hôte) ...
-                io.to(code).emit('updatePlayerList', {
-                    roomCode: code, // <-- AJOUTER CETTE LIGNE
-                    players: room.players,
-                    hostId: room.hostId,
-                    categories: room.categories,
-                    selectedCategories: room.selectedCategories
-                });
+         console.log(`❌ Déconnexion : ${socket.id}`);
+        // Find which room the disconnecting user was in
+        let roomCodeToUpdate = null;
+        for (const code in rooms) { // 'code' is the roomCode here
+            const room = rooms[code];
+            // Ensure room and players exist before searching
+            if (!room || !room.players) continue;
+
+            // Define playerIndex *inside* the loop's scope
+            const playerIndex = room.players.findIndex(p => p.id === socket.id);
+
+            // Check if player was found in *this* room
+            if (playerIndex !== -1) {
+                roomCodeToUpdate = code;
+                const disconnectedPlayer = room.players.splice(playerIndex, 1)[0]; // Remove player
+                console.log(`Player ${disconnectedPlayer.pseudo} retiré de ${code}`);
+
+                if (room.players.length === 0) {
+                    // Clean up timer if room becomes empty
+                    if (quizTimers[code]) {
+                        clearTimeout(quizTimers[code]);
+                        delete quizTimers[code];
+                        console.log(`[${code}] Timer quiz nettoyé car room vide.`);
+                    }
+                    delete rooms[code]; // Delete room
+                    delete currentRoomStates[code]; // Clean up state
+                    console.log(`💥 Room ${code} supprimée.`);
+                } else {
+                    // Check if the disconnected player was the host
+                    if (room.hostId === socket.id) {
+                        room.hostId = room.players[0].id; // Assign new host
+                        console.log(`👑 Nouvel hôte ${room.players[0].pseudo} pour ${code}`);
+                    }
+                    // Notify remaining players
+                    io.to(code).emit('updatePlayerList', {
+                        roomCode: code, // Include roomCode
+                        players: room.players,
+                        hostId: room.hostId,
+                        categories: room.categories,
+                        selectedCategories: room.selectedCategories
+                    });
+                }
+                break; // Player found and handled, exit loop
             }
-            break;
         }
-    }
-});
+         // Optional: Log if the disconnected socket wasn't found in any active room
+         // if (!roomCodeToUpdate) {
+         //     console.log(`Socket ${socket.id} déconnecté mais non trouvé dans une room active.`);
+         // }
+    });
 });
 
 const PORT = process.env.PORT || 3000;
