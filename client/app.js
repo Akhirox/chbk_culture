@@ -502,41 +502,50 @@ if (socket) {
     });
 
     socket.on('updatePlayerList', (data) => {
-        console.log('[updatePlayerList] Reçu:', data);
-        if (!data || !data.players || !data.hostId || !data.categories || !data.selectedCategories) { console.error("[updatePlayerList] Données invalides", data); return; }
-        currentHostId = data.hostId;
-        isHost = (socket && socket.id === currentHostId);
-        allAvailableCategories = data.categories || [];
+    console.log('[updatePlayerList] Reçu:', data);
+    if (!data || !data.players || !data.hostId || !data.categories || !data.selectedCategories) {
+        console.error("[updatePlayerList] Données invalides reçues", data);
+        return;
+    }
+    currentHostId = data.hostId;
+    isHost = (socket && socket.id === currentHostId);
+    allAvailableCategories = data.categories || [];
 
-        let lobbyJustShown = false;
-        if (homeScreen && !homeScreen.classList.contains('hidden')) {
-            if (!lobbyScreen || !roomCodeInput || !pseudoJoinInput) { console.error("[updatePlayerList] Manque éléments pour rejoindre"); return; }
-            currentRoomCode = roomCodeInput.value.toUpperCase();
-            console.log(`%c[Player Join] currentRoomCode DÉFINI à: ${currentRoomCode}`, 'color: green; font-weight: bold;');
-            console.log("[updatePlayerList] Joueur rejoint, currentRoomCode:", currentRoomCode);
-            homeScreen.classList.add('hidden'); lobbyScreen.classList.remove('hidden'); lobbyJustShown = true;
+    // --- SIMPLIFIED LOGIC ---
+    // If the home screen is currently visible, it means a player just joined.
+    // Call showLobby directly to handle everything (setting room code, populating, etc.)
+    if (homeScreen && !homeScreen.classList.contains('hidden')) {
+        console.log("[updatePlayerList] Joueur rejoint, appel direct de showLobby...");
 
-             // Explicitly call showLobby to rebuild DOM for joining player
-             showLobby(data); // Pass the latest data
-             // No need for separate population/update calls here, showLobby handles it
+        // **Store session BEFORE showing lobby**
+        const currentPseudo = pseudoJoinInput ? pseudoJoinInput.value : null;
+        const joinedRoomCode = roomCodeInput ? roomCodeInput.value.toUpperCase() : null;
+        if(currentPseudo && joinedRoomCode) storeSession(currentPseudo, joinedRoomCode);
 
-        } else if (!isReconnecting){ // Only update if not currently handling a rejoin success
-            console.log("[updatePlayerList] Lobby déjà visible, mise à jour du contenu.");
-            // Re-select elements just in case they were lost
-            roomCodeDisplay = document.getElementById('room-code-display');
-            playerList = document.getElementById('player-list');
-            hostControls = document.getElementById('host-controls');
-            playerView = document.getElementById('player-view');
-            categoryCheckboxesContainer = document.getElementById('category-checkboxes');
-            categoryListPlayer = document.getElementById('category-list-player');
+        // Pass the received data directly to showLobby
+        showLobby(data);
+        // showLobby will handle setting currentRoomCode, populating lists, and attaching listeners.
 
-            if (roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode;
-            updatePlayerListView(data.players);
-            populateCategoryLists(allAvailableCategories, data.selectedCategories);
-            updateLobbyView();
-        }
-         isReconnecting = false; // Reset flag after handling
-    });
+    } else if (!isReconnecting && lobbyScreen && !lobbyScreen.classList.contains('hidden')) {
+        // If the lobby is already visible (and we are not reconnecting),
+        // update only the necessary parts.
+        console.log("[updatePlayerList] Lobby déjà visible, mise à jour du contenu.");
+
+        // Re-select elements just in case they were lost (robustness)
+        playerList = document.getElementById('player-list');
+        categoryCheckboxesContainer = document.getElementById('category-checkboxes');
+        categoryListPlayer = document.getElementById('category-list-player');
+        hostControls = document.getElementById('host-controls');
+        playerView = document.getElementById('player-view');
+
+        updatePlayerListView(data.players);
+        populateCategoryLists(allAvailableCategories, data.selectedCategories);
+        updateLobbyView();
+    }
+    // Reset reconnecting flag if it was set
+    isReconnecting = false;
+    console.log("[updatePlayerList] Terminé.");
+});
 
     socket.on('updateSelectedCategories', (selectedCategories) => {
         console.log("Server updated selected categories:", selectedCategories);
