@@ -110,6 +110,19 @@ function lockAnswerUI(answer) {
 
 function showLobby(roomData) {
     console.log("--- Entering showLobby ---");
+    if (!roomData || !roomData.roomCode || !roomData.players || !roomData.hostId || !roomData.categories || !roomData.selectedCategories) {
+        console.error("showLobby: Données de room incomplètes reçues", roomData);
+        return;
+    }
+
+    // Définir les variables globales D'ABORD, en utilisant roomData
+    currentHostId = roomData.hostId;
+    currentRoomCode = roomData.roomCode; // <-- DÉFINITION FIABLE ICI
+    isHost = (socket && socket.id === currentHostId);
+    allAvailableCategories = roomData.categories || [];
+    console.log(`[showLobby] currentRoomCode DÉFINI à: ${currentRoomCode}`); // Log de confirmation
+
+    // Masquer les autres écrans
     if (homeScreen) homeScreen.classList.add('hidden');
     if (quizScreen) quizScreen.classList.add('hidden');
     if (correctionScreen) correctionScreen.classList.add('hidden');
@@ -117,8 +130,10 @@ function showLobby(roomData) {
     if (!lobbyScreen) { console.error("lobbyScreen element not found!"); return; }
     lobbyScreen.classList.remove('hidden');
 
+    // Reconstruire le HTML
     lobbyScreen.innerHTML = `<h2>Room Code : <span id="room-code-display"></span></h2><h3>Joueurs connectés :</h3><ul id="player-list"></ul><div id="host-controls" class="hidden"><div class="category-selection"><h3>Choisissez les catégories :</h3><div id="category-checkboxes"></div></div><button id="start-game-btn">Lancer le Quiz !</button></div><div id="player-view" class="hidden"><div class="category-selection"><h3>Catégories activées :</h3><div id="category-list-player"></div></div><p class="waiting-message">En attente du lancement par l'hôte...</p></div>`;
 
+    // Re-sélectionner les éléments DANS le lobby reconstruit
     roomCodeDisplay = document.getElementById('room-code-display');
     playerList = document.getElementById('player-list');
     hostControls = document.getElementById('host-controls');
@@ -128,21 +143,18 @@ function showLobby(roomData) {
     startGameBtn = document.getElementById('start-game-btn');
 
     if (!roomCodeDisplay || !playerList || !startGameBtn || !hostControls || !playerView || !categoryCheckboxesContainer || !categoryListPlayer) {
-        console.error("Critical lobby elements not found after innerHTML rewrite!"); return;
+        console.error("Éléments critiques du lobby introuvables après reconstruction !"); return;
     }
 
-    if (startGameBtn) startGameBtn.addEventListener('click', onStartGameClick); else console.error("Cannot attach listener, startGameBtn not found.");
+    // Rattacher listener
+    if (startGameBtn) startGameBtn.addEventListener('click', onStartGameClick);
 
-    currentHostId = roomData.hostId;
-    currentRoomCode = roomData.roomCode;
-    if(roomCodeDisplay) roomCodeDisplay.textContent = currentRoomCode;
-    else console.error("roomCodeDisplay became null before setting textContent");
-
-    if (roomData.players) updatePlayerListView(roomData.players); else console.error("roomData.players missing");
-
-    populateCategoryLists(roomData.categories, roomData.selectedCategories);
-
+    // Mettre à jour le contenu
+    roomCodeDisplay.textContent = currentRoomCode; // Utiliser la variable globale qui vient d'être définie
+    updatePlayerListView(roomData.players);
+    populateCategoryLists(allAvailableCategories, roomData.selectedCategories);
     updateLobbyView();
+
     console.log("--- Exiting showLobby ---");
 }
 
@@ -364,7 +376,8 @@ if (joinBtn) {
         if (pseudo && roomCode) {
             console.log("Emitting joinRoom...");
             if(socket && socket.connected) {
-                storeSession(pseudo, roomCode); // Store session on attempt
+                // Store session ici, c'est bien
+                storeSession(pseudo, roomCode);
                 socket.emit('joinRoom', { pseudo, roomCode });
             } else console.error("Socket not connected!");
         } else { alert("Veuillez entrer un pseudo et un code de room."); }
@@ -504,46 +517,28 @@ if (socket) {
     socket.on('updatePlayerList', (data) => {
     console.log('[updatePlayerList] Reçu:', data);
     if (!data || !data.players || !data.hostId || !data.categories || !data.selectedCategories) {
-        console.error("[updatePlayerList] Données invalides reçues", data);
+        console.error("[updatePlayerList] Données invalides", data);
         return;
     }
-    currentHostId = data.hostId;
-    isHost = (socket && socket.id === currentHostId);
-    allAvailableCategories = data.categories || [];
 
-    // --- SIMPLIFIED LOGIC ---
-    // If the home screen is currently visible, it means a player just joined.
-    // Call showLobby directly to handle everything (setting room code, populating, etc.)
+    // Si l'écran d'accueil est visible, c'est un joueur qui rejoint.
+    // showLobby va gérer la définition de currentRoomCode et l'affichage.
     if (homeScreen && !homeScreen.classList.contains('hidden')) {
-        console.log("[updatePlayerList] Joueur rejoint, appel direct de showLobby...");
+        console.log("[updatePlayerList] Joueur rejoint détecté, appel de showLobby...");
+        showLobby(data); // showLobby utilise data.roomCode
+    } else if (lobbyScreen && !lobbyScreen.classList.contains('hidden') && !isReconnecting) {
+        // Si le lobby est déjà visible (ex: un autre joueur rejoint/part), mettre à jour
+        console.log("[updatePlayerList] Lobby déjà visible, mise à jour simple.");
+        currentHostId = data.hostId; // Mettre à jour l'hôte global
+        isHost = (socket && socket.id === currentHostId);
+        allAvailableCategories = data.categories || []; // Mettre à jour les catégories globales
 
-        // **Store session BEFORE showing lobby**
-        const currentPseudo = pseudoJoinInput ? pseudoJoinInput.value : null;
-        const joinedRoomCode = roomCodeInput ? roomCodeInput.value.toUpperCase() : null;
-        if(currentPseudo && joinedRoomCode) storeSession(currentPseudo, joinedRoomCode);
-
-        // Pass the received data directly to showLobby
-        showLobby(data);
-        // showLobby will handle setting currentRoomCode, populating lists, and attaching listeners.
-
-    } else if (!isReconnecting && lobbyScreen && !lobbyScreen.classList.contains('hidden')) {
-        // If the lobby is already visible (and we are not reconnecting),
-        // update only the necessary parts.
-        console.log("[updatePlayerList] Lobby déjà visible, mise à jour du contenu.");
-
-        // Re-select elements just in case they were lost (robustness)
-        playerList = document.getElementById('player-list');
-        categoryCheckboxesContainer = document.getElementById('category-checkboxes');
-        categoryListPlayer = document.getElementById('category-list-player');
-        hostControls = document.getElementById('host-controls');
-        playerView = document.getElementById('player-view');
-
+        // Mettre à jour les éléments directement (ils devraient exister)
         updatePlayerListView(data.players);
         populateCategoryLists(allAvailableCategories, data.selectedCategories);
         updateLobbyView();
     }
-    // Reset reconnecting flag if it was set
-    isReconnecting = false;
+    isReconnecting = false; // Reset flag
     console.log("[updatePlayerList] Terminé.");
 });
 
